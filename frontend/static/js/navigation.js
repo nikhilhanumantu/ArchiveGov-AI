@@ -9,7 +9,7 @@ const ROUTES_MAP = {
   'document-upload': '/app/upload',
   'digital-archive': '/app/archive',
   'ocr-and-text-extraction': '/app/ocr',
-  'history-and-versions': '/app/history/DOC-1912-KDL',
+  'history-and-versions': '/app/history',
   'reports-and-analytics': '/app/reports',
   'user-management': '/app/users',
   'settings': '/app/settings',
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const docId = urlParams.get('document_id');
     if (docId && link.href.includes('/app/')) {
       const targetUrl = new URL(link.href, window.location.origin);
-      if (['/app/restoration', '/app/damage-analysis', '/app/inpainting', '/app/ocr', '/app/restoration-result'].includes(targetUrl.pathname)) {
+      if (['/app/restoration', '/app/damage-analysis', '/app/inpainting', '/app/ocr', '/app/restoration-result', '/app/history'].includes(targetUrl.pathname)) {
         targetUrl.searchParams.set('document_id', docId);
         link.href = targetUrl.toString();
       }

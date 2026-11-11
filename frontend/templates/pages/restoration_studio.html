@@ -719,10 +719,36 @@
           if (imgRest) imgRest.src = freshUrl;
           if (sideRest) sideRest.src = freshUrl;
 
+          // Smoothly animate divider to 25% so the user immediately perceives the enhanced result
+          if (overlay && divider) {
+            overlay.style.transition = 'width 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
+            divider.style.transition = 'left 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
+            overlay.style.width = '25%';
+            divider.style.left = 'calc(25% - 14px)';
+            if (innerWrapper) {
+              innerWrapper.style.transition = 'width 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
+              innerWrapper.style.width = `${(1 / 0.25) * 100}%`;
+            }
+            setTimeout(() => {
+              overlay.style.transition = '';
+              divider.style.transition = '';
+              if (innerWrapper) innerWrapper.style.transition = '';
+            }, 750);
+          }
+
+          // Mark Stage 3 as Completed in the sequential stages checklist
+          const stage3 = document.getElementById('stage-realesrgan');
+          if (stage3) {
+            const icon = stage3.querySelector('.stage-icon');
+            const badge = stage3.querySelector('.stage-badge');
+            if (icon) { icon.className = 'material-symbols-outlined text-emerald-400 text-[18px] stage-icon'; icon.textContent = 'check_circle'; }
+            if (badge) { badge.className = 'text-emerald-400 text-[11px] font-semibold stage-badge'; badge.textContent = 'Enhanced (Finegrain)'; }
+          }
+
           const dimInfo = res.metrics?.enhanced_dimensions 
             ? ` (${res.metrics.enhanced_dimensions.width}x${res.metrics.enhanced_dimensions.height} px)` 
             : '';
-          Toast.success(`Image enhanced successfully${dimInfo}! Substrate cleaned & typography sharpened.`, 'Finegrain Enhanced');
+          Toast.success(`Image enhanced successfully${dimInfo}! Applied to viewport. Drag divider or view Side-by-Side.`, 'Finegrain Enhanced');
         } else {
           Toast.error(res.detail || 'Finegrain enhancement encountered an issue.', 'Enhancement Note');
         }
@@ -795,6 +821,32 @@
           const sideRest = document.getElementById('sideImgRestored');
           if (imgRest) imgRest.src = freshUrl;
           if (sideRest) sideRest.src = freshUrl;
+
+          // Smoothly animate divider to 25% so the user immediately perceives the enhanced result
+          if (overlay && divider) {
+            overlay.style.transition = 'width 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
+            divider.style.transition = 'left 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
+            overlay.style.width = '25%';
+            divider.style.left = 'calc(25% - 14px)';
+            if (innerWrapper) {
+              innerWrapper.style.transition = 'width 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
+              innerWrapper.style.width = `${(1 / 0.25) * 100}%`;
+            }
+            setTimeout(() => {
+              overlay.style.transition = '';
+              divider.style.transition = '';
+              if (innerWrapper) innerWrapper.style.transition = '';
+            }, 750);
+          }
+
+          // Mark Stage 3 as Completed in the sequential stages checklist
+          const stage3 = document.getElementById('stage-realesrgan');
+          if (stage3) {
+            const icon = stage3.querySelector('.stage-icon');
+            const badge = stage3.querySelector('.stage-badge');
+            if (icon) { icon.className = 'material-symbols-outlined text-emerald-400 text-[18px] stage-icon'; icon.textContent = 'check_circle'; }
+            if (badge) { badge.className = 'text-emerald-400 text-[11px] font-semibold stage-badge'; badge.textContent = 'Enhanced (Gemini Nano)'; }
+          }
 
           const dimInfo = res.metrics?.enhanced_dimensions 
             ? ` (${res.metrics.enhanced_dimensions.width}x${res.metrics.enhanced_dimensions.height} px)` 

@@ -22,11 +22,25 @@
       <p class="font-body-sm text-xs text-on-surface-variant">Track document changes, AI restoration stages, and comparative lineage.</p>
     </div>
 
-    <!-- Action Buttons Cluster -->
+    <!-- Action Buttons Cluster & Document Switcher -->
     <div class="flex items-center gap-space-sm shrink-0 flex-wrap">
+      {% if all_documents %}
+      <div class="relative">
+        <select 
+          onchange="window.location.href='/app/history/' + this.value"
+          class="bg-surface-container-high/90 text-on-surface text-xs font-mono rounded-xl px-3 py-2 border border-outline-variant/40 focus:border-secondary outline-none cursor-pointer pr-7 shadow-sm"
+        >
+          {% for d in all_documents %}
+            <option value="{{ d.document_id }}" {% if d.document_id == document_id %}selected{% endif %}>
+              {{ d.document_id }} — {{ d.title[:28] }}{% if d.title|length > 28 %}...{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
       <button class="flex items-center gap-space-xs px-space-md py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 text-on-surface text-xs font-mono font-medium shadow-sm transition-all" id="btnCompare">
         <span class="material-symbols-outlined text-[16px] text-primary">difference</span>
-        <span>Compare Selected Versions</span>
+        <span>Compare in Studio</span>
       </button>
       <a href="/api/v1/files/{{ document.restored_file_key or document.original_file_key }}" download class="flex items-center gap-space-xs px-space-md py-2 rounded-xl bg-gradient-to-r from-primary-container to-inverse-primary hover:brightness-110 text-white text-xs font-mono font-semibold shadow-lg transition-all">
         <span class="material-symbols-outlined text-[16px]">download</span>
@@ -114,11 +128,22 @@
 
   function renderTimeline(verList) {
     const container = document.getElementById('versionTimelineList');
+    if (!verList || verList.length === 0) {
+      container.innerHTML = `
+        <div class="p-6 text-center text-xs text-on-surface-variant font-mono">
+          No historical versions recorded for this document yet. Run restoration to generate new versions.
+        </div>
+      `;
+      return;
+    }
     // Reverse to show latest first
     const reversed = [...verList].reverse();
 
     container.innerHTML = reversed.map((v, i) => {
       const isCurrent = i === 0;
+      const dateStr = (v.created_at || '').substring(0, 10) || new Date().toISOString().substring(0, 10);
+      const typeStr = (v.version_type || 'restored').toUpperCase();
+      const modelStr = v.model_used || 'Archival Processing';
       return `
         <div class="relative bg-surface-container/90 rounded-xl p-4 border ${isCurrent ? 'border-primary/50 shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_16px_rgba(160,120,255,0.18)]' : 'border-outline-variant/30'} cursor-pointer hover:bg-surface-container-high transition-all" onclick="selectVersionById('${v.version_id}')">
           <!-- Glowing Node -->
@@ -126,12 +151,12 @@
           
           <div class="flex items-center justify-between gap-2 flex-wrap">
             <div class="flex items-center gap-2">
-              <span class="font-headline-sm text-sm text-white font-bold">${v.version_number} – ${v.version_type.toUpperCase()}</span>
+              <span class="font-headline-sm text-sm text-white font-bold">${v.version_number} – ${typeStr}</span>
               ${isCurrent ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[10px] font-bold">Current Master</span>' : ''}
             </div>
-            <span class="font-mono text-[11px] text-tertiary">${v.created_at[:10]}</span>
+            <span class="font-mono text-[11px] text-tertiary">${dateStr}</span>
           </div>
-          <p class="text-xs text-slate-300 mt-1">${v.model_used}</p>
+          <p class="text-xs text-slate-300 mt-1">${modelStr}</p>
           <span class="text-[11px] text-slate-400 mt-0.5 block italic">${v.notes || ''}</span>
         </div>
       `;
@@ -148,9 +173,14 @@
     document.getElementById('previewVersionTitle').textContent = `Version Inspection // ${v.version_id}`;
     document.getElementById('previewVersionNum').textContent = v.version_number;
     document.getElementById('versionPreviewImg').src = `/api/v1/files/${v.file_key}`;
-    document.getElementById('previewModel').textContent = v.model_used;
+    document.getElementById('previewModel').textContent = v.model_used || 'Archival Processing Engine';
     document.getElementById('previewNotes').textContent = v.notes || 'Archival recorded milestone.';
   }
+
+  // Compare in studio button
+  document.getElementById('btnCompare')?.addEventListener('click', () => {
+    window.location.href = `/app/restoration?document_id=${docId}`;
+  });
 
   // Rollback button
   document.getElementById('btnRollback').addEventListener('click', async () => {

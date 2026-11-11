@@ -110,44 +110,50 @@ class RestorationJobWorker:
             enhanced_key = f"enhanced_{original_file_key}"
             enhanced_path = str(storage.working / enhanced_key)
             
-            enhancer_choice = model_config.get("enhancer", "openrouter")
+            model_config = job.get("model_configuration") or {}
+            enhancer_choice = model_config.get("enhancer", "finegrain")
             enhance_params = job.get("processing_parameters", {})
 
-            if enhancer_choice in ["google_ai_studio", "google_studio"]:
-                enhancer_results = google_ai_studio_adapter.enhance(
-                    current_file_path,
-                    enhanced_path,
-                    prompt=enhance_params.get("prompt"),
-                    model=enhance_params.get("model", "gemini-nano-banana-2.1"),
-                    api_key=enhance_params.get("api_key")
-                )
-            elif enhancer_choice in ["openrouter", "gemini_nano"]:
-                enhancer_results = openrouter_gemini_adapter.enhance_document_image(
-                    current_file_path,
-                    enhanced_path,
-                    prompt=enhance_params.get("prompt"),
-                    resolution=enhance_params.get("resolution", "1K"),
-                    aspect_ratio=enhance_params.get("aspect_ratio"),
-                    api_key=enhance_params.get("api_key")
-                )
-            elif enhancer_choice == "finegrain" and settings.ENABLE_FINEGRAIN_ENHANCER:
-                enhancer_results = finegrain_adapter.enhance(
-                    current_file_path,
-                    enhanced_path,
-                    prompt=enhance_params.get("prompt"),
-                    negative_prompt=enhance_params.get("negative_prompt"),
-                    seed=enhance_params.get("seed", 42),
-                    upscale_factor=enhance_params.get("upscale_factor", 1.5),
-                    controlnet_scale=enhance_params.get("controlnet_scale", 0.6),
-                    controlnet_decay=enhance_params.get("controlnet_decay", 1.0),
-                    condition_scale=enhance_params.get("condition_scale", 6.0),
-                    tile_width=enhance_params.get("tile_width", 112),
-                    tile_height=enhance_params.get("tile_height", 144),
-                    denoise_strength=enhance_params.get("denoise_strength", 0.35),
-                    num_inference_steps=enhance_params.get("num_inference_steps", 18),
-                    solver=enhance_params.get("solver", "DDIM"),
-                )
-            else:
+            try:
+                if enhancer_choice in ["google_ai_studio", "google_studio"]:
+                    enhancer_results = google_ai_studio_adapter.enhance(
+                        current_file_path,
+                        enhanced_path,
+                        prompt=enhance_params.get("prompt"),
+                        model=enhance_params.get("model", "gemini-nano-banana-2.1"),
+                        api_key=enhance_params.get("api_key")
+                    )
+                elif enhancer_choice in ["openrouter", "gemini_nano"]:
+                    enhancer_results = openrouter_gemini_adapter.enhance_document_image(
+                        current_file_path,
+                        enhanced_path,
+                        prompt=enhance_params.get("prompt"),
+                        resolution=enhance_params.get("resolution", "1K"),
+                        aspect_ratio=enhance_params.get("aspect_ratio"),
+                        api_key=enhance_params.get("api_key")
+                    )
+                elif enhancer_choice == "finegrain" and settings.ENABLE_FINEGRAIN_ENHANCER:
+                    enhancer_results = finegrain_adapter.enhance(
+                        current_file_path,
+                        enhanced_path,
+                        prompt=enhance_params.get("prompt"),
+                        negative_prompt=enhance_params.get("negative_prompt"),
+                        seed=enhance_params.get("seed", 42),
+                        upscale_factor=enhance_params.get("upscale_factor", 1.5),
+                        controlnet_scale=enhance_params.get("controlnet_scale", 0.6),
+                        controlnet_decay=enhance_params.get("controlnet_decay", 1.0),
+                        condition_scale=enhance_params.get("condition_scale", 6.0),
+                        tile_width=enhance_params.get("tile_width", 112),
+                        tile_height=enhance_params.get("tile_height", 144),
+                        denoise_strength=enhance_params.get("denoise_strength", 0.35),
+                        num_inference_steps=enhance_params.get("num_inference_steps", 18),
+                        solver=enhance_params.get("solver", "DDIM"),
+                        hf_token=enhance_params.get("hf_token"),
+                    )
+                else:
+                    enhancer_results = realesrgan_adapter.enhance(current_file_path, enhanced_path, outscale=1.5)
+            except Exception as enh_err:
+                logger.warning(f"Primary enhancer {enhancer_choice} failed: {enh_err}. Falling back to Real-ESRGAN.")
                 enhancer_results = realesrgan_adapter.enhance(current_file_path, enhanced_path, outscale=1.5)
 
             self.job_repo.update_stage(job_id, "realesrgan_enhancement", "completed", 100, enhancer_results)

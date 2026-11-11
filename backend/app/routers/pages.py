@@ -217,12 +217,13 @@ def history_versions_page(request: Request, document_id: str = None, user: dict 
     redirect = auth_guard(request, user)
     if redirect:
         return redirect
-    doc, document_id, all_docs = resolve_active_document(document_id)
+    target_id = request.query_params.get("document_id") or document_id
+    doc, active_id, all_docs = resolve_active_document(target_id)
     return templates.TemplateResponse(request=request, name="pages/history_versions.html", context={
         "user": user,
         "active_page": "history-and-versions",
         "document": doc,
-        "document_id": document_id,
+        "document_id": active_id,
         "all_documents": all_docs,
         "app_name": settings.APP_NAME
     })
