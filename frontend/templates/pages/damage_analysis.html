@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block title %}AI Damage Analysis — ArchiveGov AI{% endblock %}
+
+{% block content %}
+<div class="relative w-full px-space-md lg:px-space-xl py-space-lg flex flex-col gap-space-lg overflow-hidden">
+  <!-- Ethereal Backdrop Spotlights -->
+  <div class="pointer-events-none absolute -top-40 left-1/4 w-96 h-96 rounded-full bg-primary-container/10 blur-[128px]"></div>
+  <div class="pointer-events-none absolute top-1/2 right-10 w-80 h-80 rounded-full bg-secondary/10 blur-[110px]"></div>
+
+  <!-- Top Diagnostic Folio Bar -->
+  <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md bg-surface-container-low/90 backdrop-blur-xl p-space-md rounded-2xl border border-outline-variant/30 shadow-xl">
+    <div class="flex items-center gap-space-md min-w-0">
+      <a class="p-space-xs rounded-lg bg-surface-container-high/80 text-on-surface hover:text-secondary transition-all flex items-center justify-center shrink-0" href="/app/restoration?document_id={{ document.document_id if document else 'DOC-1912-KDL' }}">
+        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+      </a>
+      <div class="flex flex-col min-w-0">
+        <div class="flex items-center gap-space-xs font-telemetry-code text-telemetry-code text-secondary flex-wrap">
+          <span>DIAGNOSTIC FOLIO //</span>
+          {% if all_documents %}
+          <select 
+            id="damageDocSelector" 
+            onchange="window.location.href='/app/damage-analysis?document_id=' + this.value"
+            class="bg-surface-container-high text-xs text-on-surface font-mono rounded px-2 py-0.5 border border-secondary/40 focus:border-secondary outline-none shadow-sm cursor-pointer hover:bg-surface-container-highest transition-colors"
+          >
+            {% for d in all_documents %}
+              <option value="{{ d.document_id }}" {% if document and d.document_id == document.document_id %}selected{% endif %}>
+                {{ d.document_id }} — {{ d.title[:30] }}
+              </option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <span class="text-tertiary font-semibold tracking-wider">{{ document.document_id if document else 'DOC-1912-KDL' }}</span>
+          {% endif %}
+          <span class="text-outline-variant">|</span>
+          <span class="text-on-surface-variant font-label-caps uppercase text-label-caps">Spectral Scan Tier 4</span>
+        </div>
+        <h1 class="font-headline-md text-headline-md text-on-surface truncate tracking-tight font-bold">
+          {{ document.title if document else '1912 Land Settlement Deed — Kuddalur Revenue District' }}
+        </h1>
+      </div>
+    </div>
+
+    <!-- Severity Meter Pill & Archival Status -->
+    <div class="flex flex-wrap items-center gap-space-sm shrink-0">
+      <div class="flex items-center gap-space-sm px-space-md py-space-xs rounded-xl bg-surface-container-highest/60 border border-outline-variant/40">
+        <div class="flex flex-col">
+          <span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Degradation Index</span>
+          <span class="font-telemetry-code text-telemetry-code text-error font-semibold flex items-center gap-space-xs" id="degradationIndexText">
+            <span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+            38.4% Moderate Decay
+          </span>
+        </div>
+        <div class="w-12 h-12 relative flex items-center justify-center">
+          <svg class="w-12 h-12 -rotate-90" viewbox="0 0 36 36">
+            <path class="text-surface-container-high" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+            <path id="circleProgressPath" class="text-error" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="38.4, 100" stroke-linecap="round" stroke-width="3.5"></path>
+          </svg>
+          <span class="absolute font-telemetry-code text-[11px] text-on-surface font-bold" id="circlePct">38%</span>
+        </div>
+      </div>
+
+      <div class="px-space-md py-space-sm rounded-xl bg-surface-container-high/80 border border-tertiary/30 flex items-center gap-space-xs">
+        <span class="material-symbols-outlined text-tertiary text-[18px]">verified</span>
+        <span class="font-label-caps text-label-caps text-tertiary font-semibold uppercase">National Registry Verified</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Workspace: Split Canvas & Inspector Sidebar -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+    <!-- Center Canvas: Multi-Spectral Defect Heatmap (8 cols) -->
+    <div class="xl:col-span-8 flex flex-col gap-space-md">
+      <div class="relative w-full rounded-2xl bg-surface-container-low/95 p-space-md border border-outline-variant/30 shadow-2xl flex flex-col gap-space-md overflow-hidden">
+        <!-- Canvas Top Toolbar / Spectral Modes -->
+        <div class="flex flex-wrap items-center justify-between gap-space-sm z-20">
+          <div class="flex items-center gap-space-xs bg-surface-container-lowest/80 p-1 rounded-xl border border-outline-variant/30">
+            <button class="px-space-sm py-1.5 rounded-lg text-body-sm font-body-sm bg-primary-container text-on-primary-container font-semibold transition-all spectral-btn active" data-filter="normal">
+              Visible Spectrum (RGB)
+            </button>
+            <button class="px-space-sm py-1.5 rounded-lg text-body-sm font-body-sm text-on-surface-variant hover:text-secondary hover:bg-surface-container-high transition-all flex items-center gap-1 spectral-btn" data-filter="uv">
+              <span class="material-symbols-outlined text-[14px]">flare</span> UV Luminescence
+            </button>
+            <button class="px-space-sm py-1.5 rounded-lg text-body-sm font-body-sm text-on-surface-variant hover:text-tertiary hover:bg-surface-container-high transition-all flex items-center gap-1 spectral-btn" data-filter="ir">
+              <span class="material-symbols-outlined text-[14px]">blur_circular</span> Infrared Reflectance
+            </button>
+          </div>
+
+          <!-- Heatmap Layer Toggle & Canvas Controls -->
+          <div class="flex items-center gap-1.5">
+            <button class="p-1.5 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors" id="zoomOutBtn" title="Zoom Out">
+              <span class="material-symbols-outlined text-[16px]">remove</span>
+            </button>
+            <span class="font-mono text-[11px] text-on-surface px-1.5" id="zoomLevelDisplay">100%</span>
+            <button class="p-1.5 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors" id="zoomInBtn" title="Zoom In">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+            </button>
+            <button class="p-1.5 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors" id="resetFitBtn" title="Fit to Canvas">
+              <span class="material-symbols-outlined text-[16px]">fit_screen</span>
+            </button>
+            <div class="h-4 w-px bg-outline-variant/40 mx-0.5"></div>
+            <button class="flex items-center gap-space-xs px-space-sm py-1.5 rounded-lg bg-secondary-container/20 text-secondary hover:bg-secondary-container/30 border border-secondary/30 transition-all font-body-sm text-body-sm font-medium" id="toggleHeatmapBtn">
+              <span class="material-symbols-outlined text-[16px]">layers</span>
+              <span>Heatmap Overlays Visible</span>
+            </button>
+            <button class="flex items-center gap-space-xs px-space-sm py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container text-on-surface-variant hover:text-white border border-outline-variant/30 transition-all font-body-sm text-body-sm font-medium" id="reanalyzeBtn" title="Re-scan CV Damage Detector">
+              <span class="material-symbols-outlined text-[16px]">sync</span>
+              <span>Re-Scan</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Document Viewer Frame with Overlays -->
+        <div class="relative w-full h-[600px] rounded-xl bg-[#050814] overflow-hidden flex items-center justify-center group shadow-inner border border-outline-variant/20 p-2 select-none" id="inspectionViewport">
+          <div id="inspectionCanvasWrapper" class="relative w-fit h-fit inline-flex items-center justify-center transition-transform duration-150">
+            <img 
+              id="inspectionImage"
+              class="max-w-full max-h-[580px] object-contain object-center filter contrast-105 transition-all duration-300 block select-none rounded-lg" 
+              src="{% if document and document.original_file_key %}/api/v1/files/{{ document.original_file_key }}{% else %}/api/v1/files/doc_1912_kdl_orig.png{% endif %}" 
+              alt="Historical Archival Folio"
+            />
+
+            <!-- Interactive Defect Heatmap Overlays (Dynamic Image-Specific Bounding Boxes) -->
+            <div class="absolute inset-0 pointer-events-none transition-opacity duration-300" id="heatmapContainer">
+              <!-- Dynamically populated via computer vision per document -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Defect Inspector & Metrics Dock (4 cols) -->
+    <div class="xl:col-span-4 flex flex-col gap-space-md">
+      <!-- Detected Defects Breakdown -->
+      <div class="bg-surface-container-low/95 rounded-2xl border border-outline-variant/30 p-space-lg shadow-2xl flex flex-col gap-space-md">
+        <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-xs">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[22px]">troubleshoot</span>
+            <h3 class="font-headline-sm text-sm text-on-surface font-bold">Detected Defect Layers</h3>
+          </div>
+          <span class="font-mono text-xs text-secondary" id="defectCountBadge">Scanning...</span>
+        </div>
+
+        <div class="space-y-3 font-sans text-xs" id="defectsList">
+          <!-- Dynamically populated per document -->
+          <div class="p-3 rounded-xl bg-surface-container flex items-center justify-center text-slate-400 gap-2 font-mono">
+            <span class="material-symbols-outlined text-[16px] animate-spin">sync</span>
+            <span>Executing Computer Vision Diagnostics...</span>
+          </div>
+        </div>
+
+        <a 
+          href="/app/inpainting?document_id={{ document.document_id if document else 'DOC-1912-KDL' }}"
+          class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-primary-container to-inverse-primary hover:brightness-110 text-white font-mono text-xs font-semibold uppercase tracking-wider shadow-lg text-center flex items-center justify-center gap-2 mt-2"
+        >
+          <span class="material-symbols-outlined text-[18px]">brush</span>
+          <span>Send Detected Tears to Inpainting</span>
+        </a>
+      </div>
+
+      <!-- Spectral Metrics -->
+      <div class="bg-surface-container-low/95 rounded-2xl border border-outline-variant/30 p-space-md shadow-xl flex flex-col gap-2 font-mono text-xs">
+        <span class="text-slate-400 uppercase text-[11px] tracking-wider mb-1">Explainable Vision Metrics</span>
+        <div class="flex justify-between p-2 rounded bg-surface-container-lowest">
+          <span class="text-slate-400">Laplacian Sharpness</span>
+          <span class="text-white" id="laplacianMetric">Calculating...</span>
+        </div>
+        <div class="flex justify-between p-2 rounded bg-surface-container-lowest">
+          <span class="text-slate-400">RMS Contrast Deviation</span>
+          <span class="text-white" id="contrastMetric">Calculating...</span>
+        </div>
+        <div class="flex justify-between p-2 rounded bg-surface-container-lowest">
+          <span class="text-slate-400">Illumination Discrepancy</span>
+          <span class="text-white" id="illumMetric">Calculating...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const docId = "{{ document.document_id if document else 'DOC-1912-KDL' }}";
+  const img = document.getElementById('inspectionImage');
+  const canvasWrapper = document.getElementById('inspectionCanvasWrapper');
+  const heatmapContainer = document.getElementById('heatmapContainer');
+  const defectsList = document.getElementById('defectsList');
+  const defectCountBadge = document.getElementById('defectCountBadge');
+  const degradationIndexText = document.getElementById('degradationIndexText');
+  const circlePct = document.getElementById('circlePct');
+  const circleProgressPath = document.getElementById('circleProgressPath');
+  const laplacianMetric = document.getElementById('laplacianMetric');
+  const contrastMetric = document.getElementById('contrastMetric');
+  const illumMetric = document.getElementById('illumMetric');
+  const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
+
+  // 1. Spectral Wavelength Simulation Filter
+  const spectralButtons = document.querySelectorAll('.spectral-btn');
+  spectralButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      spectralButtons.forEach(b => {
+        b.classList.remove('active', 'bg-primary-container', 'text-on-primary-container');
+        b.classList.add('text-on-surface-variant');
+      });
+      btn.classList.add('active', 'bg-primary-container', 'text-on-primary-container');
+      btn.classList.remove('text-on-surface-variant');
+
+      const filterType = btn.getAttribute('data-filter');
+      if (filterType === 'uv') {
+        img.style.filter = 'invert(1) hue-rotate(190deg) contrast(150%) brightness(85%)';
+      } else if (filterType === 'ir') {
+        img.style.filter = 'grayscale(1) contrast(180%) brightness(110%)';
+      } else {
+        img.style.filter = 'contrast(105%)';
+      }
+    });
+  });
+
+  // 2. Toggle Heatmap Visibility
+  document.getElementById('toggleHeatmapBtn').addEventListener('click', function() {
+    heatmapContainer.classList.toggle('opacity-0');
+    if (heatmapContainer.classList.contains('opacity-0')) {
+      this.innerHTML = `<span class="material-symbols-outlined text-[16px]">layers_clear</span> <span>Heatmap Hidden</span>`;
+    } else {
+      this.innerHTML = `<span class="material-symbols-outlined text-[16px]">layers</span> <span>Heatmap Overlays Visible</span>`;
+    }
+  });
+
+  // 3. Zoom Controls
+  let currentZoom = 100;
+  function updateZoom() {
+    if (canvasWrapper && zoomLevelDisplay) {
+      canvasWrapper.style.transform = `scale(${currentZoom / 100})`;
+      zoomLevelDisplay.textContent = `${currentZoom}%`;
+    }
+  }
+
+  document.getElementById('zoomInBtn')?.addEventListener('click', () => {
+    if (currentZoom < 250) { currentZoom += 25; updateZoom(); }
+  });
+  document.getElementById('zoomOutBtn')?.addEventListener('click', () => {
+    if (currentZoom > 50) { currentZoom -= 25; updateZoom(); }
+  });
+  document.getElementById('resetFitBtn')?.addEventListener('click', () => {
+    currentZoom = 100; updateZoom();
+  });
+  document.getElementById('reanalyzeBtn')?.addEventListener('click', () => {
+    Toast.info('Re-running Computer Vision Spectral Damage Detector...', 'AI Diagnostic Scanner');
+    loadDamageAnalysis(true);
+  });
+
+  // 4. Color Palette Resolver by Defect Category
+  function getCategoryConfig(category, label) {
+    const cat = (category + ' ' + (label || '')).toLowerCase();
+    if (cat.includes('water') || cat.includes('stain') || cat.includes('oxidation')) {
+      return {
+        borderColor: 'border-red-500/80',
+        bgColor: 'bg-red-500/20 hover:bg-red-500/35',
+        badgeBg: 'bg-red-600',
+        cardBorder: 'border-red-500/30',
+        cardBadge: 'bg-red-500/20 text-red-400',
+        defaultLabel: 'Water Wash Stain'
+      };
+    } else if (cat.includes('faded') || cat.includes('script') || cat.includes('contrast')) {
+      return {
+        borderColor: 'border-amber-500/80',
+        bgColor: 'bg-amber-500/15 hover:bg-amber-500/30',
+        badgeBg: 'bg-amber-600',
+        cardBorder: 'border-amber-500/30',
+        cardBadge: 'bg-amber-500/20 text-amber-400',
+        defaultLabel: 'Faded Script'
+      };
+    } else if (cat.includes('hole') || cat.includes('loss') || (cat.includes('void') && !cat.includes('border'))) {
+      return {
+        borderColor: 'border-cyan-500/80',
+        bgColor: 'bg-cyan-500/20 hover:bg-cyan-500/35',
+        badgeBg: 'bg-cyan-600',
+        cardBorder: 'border-cyan-500/30',
+        cardBadge: 'bg-cyan-500/20 text-cyan-400',
+        defaultLabel: 'Paper Loss / Void'
+      };
+    } else if (cat.includes('torn') || cat.includes('border') || cat.includes('margin') || cat.includes('void')) {
+      return {
+        borderColor: 'border-purple-500/80',
+        bgColor: 'bg-purple-500/20 hover:bg-purple-500/35',
+        badgeBg: 'bg-purple-600',
+        cardBorder: 'border-purple-500/30',
+        cardBadge: 'bg-purple-500/20 text-purple-400',
+        defaultLabel: 'Torn Edge'
+      };
+    } else if (cat.includes('blur') || cat.includes('focus')) {
+      return {
+        borderColor: 'border-cyan-500/80',
+        bgColor: 'bg-cyan-500/20 hover:bg-cyan-500/35',
+        badgeBg: 'bg-cyan-600',
+        cardBorder: 'border-cyan-500/30',
+        cardBadge: 'bg-cyan-500/20 text-cyan-400',
+        defaultLabel: 'Soft Focus'
+      };
+    } else {
+      return {
+        borderColor: 'border-rose-500/80',
+        bgColor: 'bg-rose-500/20 hover:bg-rose-500/35',
+        badgeBg: 'bg-rose-600',
+        cardBorder: 'border-rose-500/30',
+        cardBadge: 'bg-rose-500/20 text-rose-400',
+        defaultLabel: 'Shadow Blemish'
+      };
+    }
+  }
+
+  // 5. Load and Render Real Defect Analysis from Backend
+  async function loadDamageAnalysis(force = false) {
+    try {
+      const url = force ? `/api/v1/damage-analysis/${docId}?force_recompute=true` : `/api/v1/damage-analysis/${docId}`;
+      const data = await API.get(url);
+      renderDefects(data);
+    } catch (err) {
+      console.error(err);
+      Toast.error('Could not load AI damage analysis: ' + err.message);
+    }
+  }
+
+  function renderDefects(data) {
+    const defects = data.defects || [];
+    heatmapContainer.innerHTML = '';
+    defectsList.innerHTML = '';
+
+    // Update Top Metric Pill
+    const idx = data.overall_degradation_index || 0;
+    const status = data.overall_status || 'Analyzed';
+    if (degradationIndexText) {
+      const dotColor = idx > 50 ? 'bg-error' : (idx > 25 ? 'bg-amber-400' : 'bg-emerald-400');
+      const textColor = idx > 50 ? 'text-error' : (idx > 25 ? 'text-amber-400' : 'text-emerald-400');
+      degradationIndexText.className = `font-telemetry-code text-telemetry-code ${textColor} font-semibold flex items-center gap-space-xs`;
+      degradationIndexText.innerHTML = `<span class="w-2 h-2 rounded-full ${dotColor} animate-ping"></span> ${idx}% ${status}`;
+    }
+    if (circlePct) circlePct.textContent = `${Math.round(idx)}%`;
+    if (circleProgressPath) {
+      circleProgressPath.setAttribute('stroke-dasharray', `${Math.min(100, idx)}, 100`);
+      circleProgressPath.className.baseVal = idx > 50 ? 'text-error' : (idx > 25 ? 'text-amber-400' : 'text-emerald-400');
+    }
+
+    // Update Spectral Metrics
+    if (data.spectral_metrics) {
+      if (laplacianMetric) laplacianMetric.textContent = `${data.spectral_metrics.laplacian_sharpness} (Threshold: 350.0)`;
+      if (contrastMetric) contrastMetric.textContent = `${data.spectral_metrics.contrast_std} (Target > 50.0)`;
+      if (illumMetric) illumMetric.textContent = `${data.spectral_metrics.illumination_delta} delta`;
+    }
+
+    // Update Defect Count Badge
+    if (defectCountBadge) defectCountBadge.textContent = `${defects.length} Identified`;
+
+    if (defects.length === 0) {
+      defectsList.innerHTML = `
+        <div class="p-4 rounded-xl bg-surface-container border border-emerald-500/30 text-center flex flex-col items-center gap-2">
+          <span class="material-symbols-outlined text-emerald-400 text-[24px]">verified</span>
+          <span class="text-white font-semibold">Pristine Archival Surface</span>
+          <p class="text-slate-400 text-[11px]">No structural margin voids or severe water stains detected. Ready for neural super-resolution.</p>
+        </div>
+      `;
+      return;
+    }
+
+    defects.forEach((d, i) => {
+      const cfg = getCategoryConfig(d.category, d.label);
+      const norm = d.bbox_normalized || [0.1, 0.1, 0.8, 0.8];
+      const labelText = d.label || cfg.defaultLabel;
+
+      // 1. Create Bounding Box Over Document Image
+      const box = document.createElement('div');
+      box.className = `defect-box absolute border-2 ${cfg.borderColor} ${cfg.bgColor} rounded-lg pointer-events-auto cursor-pointer transition-all duration-200 z-10`;
+      box.style.left = `${norm[0] * 100}%`;
+      box.style.top = `${norm[1] * 100}%`;
+      box.style.width = `${norm[2] * 100}%`;
+      box.style.height = `${norm[3] * 100}%`;
+      box.setAttribute('data-index', i);
+      box.title = `${d.category} (${d.severity_score}% ${d.severity_label || ''})`;
+
+      const badge = document.createElement('span');
+      badge.className = `absolute -top-3 left-2 px-1.5 py-0.5 rounded ${cfg.badgeBg} text-white font-mono text-[9px] font-bold uppercase shadow tracking-wider`;
+      badge.textContent = labelText;
+      box.appendChild(badge);
+
+      // 2. Create Defect Card in Right Inspector List
+      const card = document.createElement('div');
+      card.className = `defect-card p-3 rounded-xl bg-surface-container border ${cfg.cardBorder} flex flex-col gap-1.5 cursor-pointer transition-all duration-200 hover:brightness-110`;
+      card.setAttribute('data-index', i);
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-white">${d.category}</span>
+          <span class="px-2 py-0.5 rounded ${cfg.cardBadge} font-mono text-[10px] font-bold">${d.severity_score}% ${d.severity_label || 'Decay'}</span>
+        </div>
+        <p class="text-[11px] text-slate-400">${d.detection_method || 'Vision Metric'} • ${d.evidence || ''}</p>
+        <span class="text-[10px] font-mono text-cyan-400">Rec: ${d.recommended_operation || 'Neural Restoration'}</span>
+      `;
+
+      // Interactivity: Highlight box on card click / hover
+      function highlight() {
+        document.querySelectorAll('.defect-box').forEach(b => b.classList.remove('ring-4', 'ring-white', 'shadow-[0_0_20px_rgba(255,255,255,0.8)]', 'z-30', 'scale-[1.02]'));
+        document.querySelectorAll('.defect-card').forEach(c => c.classList.remove('ring-2', 'ring-secondary', 'bg-surface-container-high'));
+        box.classList.add('ring-4', 'ring-white', 'shadow-[0_0_20px_rgba(255,255,255,0.8)]', 'z-30', 'scale-[1.02]');
+        card.classList.add('ring-2', 'ring-secondary', 'bg-surface-container-high');
+      }
+
+      box.addEventListener('mouseenter', highlight);
+      box.addEventListener('click', highlight);
+      card.addEventListener('mouseenter', highlight);
+      card.addEventListener('click', highlight);
+
+      heatmapContainer.appendChild(box);
+      defectsList.appendChild(card);
+    });
+
+    syncHeatmapDimensions();
+  }
+
+  function syncHeatmapDimensions() {
+    if (!img || !heatmapContainer) return;
+    const w = img.offsetWidth;
+    const h = img.offsetHeight;
+    if (w > 0 && h > 0) {
+      heatmapContainer.style.width = `${w}px`;
+      heatmapContainer.style.height = `${h}px`;
+      heatmapContainer.style.left = `${img.offsetLeft}px`;
+      heatmapContainer.style.top = `${img.offsetTop}px`;
+    }
+  }
+
+  if (img) {
+    if (img.complete) {
+      syncHeatmapDimensions();
+    } else {
+      img.addEventListener('load', syncHeatmapDimensions);
+    }
+  }
+  window.addEventListener('resize', syncHeatmapDimensions);
+
+  document.addEventListener('DOMContentLoaded', () => loadDamageAnalysis(false));
+</script>
+{% endblock %}
+

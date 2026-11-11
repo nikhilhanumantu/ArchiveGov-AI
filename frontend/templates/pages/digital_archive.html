@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Digital Archive & Records Management — ArchiveGov AI{% endblock %}
+
+{% block content %}
+<div class="relative w-full px-space-lg py-space-lg flex flex-col gap-space-lg overflow-hidden">
+  <!-- Archival Ambient Radial Aura -->
+  <div class="pointer-events-none absolute -top-32 -left-20 w-96 h-96 rounded-full bg-primary-container/10 blur-[120px]"></div>
+  <div class="pointer-events-none absolute top-1/3 -right-24 w-80 h-80 rounded-full bg-secondary/10 blur-[130px]"></div>
+
+  <!-- Header Section -->
+  <div class="relative z-10 flex flex-col xl:flex-row xl:items-end justify-between gap-space-md bg-surface-container-low/85 backdrop-blur-xl p-space-lg rounded-2xl border border-outline-variant/30 shadow-xl">
+    <div class="flex flex-col gap-space-xs max-w-3xl">
+      <div class="flex items-center gap-space-xs text-tertiary">
+        <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+        <span class="font-label-caps text-label-caps uppercase tracking-wider">National Repository System • Core Ledger v4.2</span>
+      </div>
+      <h1 class="font-headline-lg text-3xl sm:text-4xl font-bold text-on-surface tracking-tight">
+        Digital Archive & Records Management
+      </h1>
+      <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">
+        Search, audit, inspect, and authenticate neural-restored sovereign government records, historic land settlements, and gazette edicts.
+      </p>
+    </div>
+
+    <!-- Live Telemetry Stats & Ingest CTA -->
+    <div class="flex items-center gap-space-sm shrink-0 flex-wrap">
+      <div class="px-space-md py-space-xs rounded-xl bg-surface-container-high/90 border border-outline-variant/30 flex flex-col">
+        <span class="font-label-caps text-label-caps text-outline uppercase font-semibold">Total Vault Files</span>
+        <span class="font-telemetry-code text-headline-sm text-secondary font-bold" id="archiveTotalCount">0</span>
+      </div>
+      <div class="px-space-md py-space-xs rounded-xl bg-surface-container-high/90 border border-outline-variant/30 flex flex-col">
+        <span class="font-label-caps text-label-caps text-outline uppercase font-semibold">Neural Integrity</span>
+        <span class="font-telemetry-code text-headline-sm text-tertiary font-bold">98.7%</span>
+      </div>
+      <a href="/app/upload" class="flex items-center gap-space-xs px-space-md py-2.5 rounded-xl bg-gradient-to-r from-primary-container to-inverse-primary text-white font-body-md font-semibold shadow-[0_0_20px_rgba(160,120,255,0.4)] hover:shadow-[0_0_28px_rgba(160,120,255,0.65)] hover:scale-105 transition-all">
+        <span class="material-symbols-outlined text-[20px]">add_box</span>
+        <span>Ingest New Record</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter & Search Control Hub -->
+  <div class="relative z-10 flex flex-col gap-space-md bg-surface-container-lowest/90 backdrop-blur-2xl p-space-md rounded-2xl border border-outline-variant/30 shadow-xl">
+    <!-- Search & Layout Controls Row -->
+    <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md">
+      <!-- Search Input -->
+      <div class="relative flex-1">
+        <span class="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-secondary text-[20px]">search</span>
+        <input 
+          class="w-full bg-surface-container/90 text-on-surface placeholder:text-outline font-body-md pl-12 pr-10 py-2.5 rounded-xl border border-outline-variant/30 focus:border-secondary focus:ring-1 focus:ring-secondary/50 focus:outline-none transition-all shadow-inner" 
+          id="archiveSearchInput" 
+          placeholder="Search documents by title, ledger ref, village, district, collectorate or year..." 
+          type="text"
+        />
+        <button id="clearSearchBtn" class="absolute right-space-sm top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface hidden" title="Clear query">
+          <span class="material-symbols-outlined text-[18px]">cancel</span>
+        </button>
+      </div>
+
+      <!-- Layout View & CSV Export -->
+      <div class="flex items-center gap-space-xs shrink-0 flex-wrap">
+        <div class="flex items-center bg-surface-container-high/80 p-0.5 rounded-xl border border-outline-variant/30">
+          <button class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container font-mono text-xs uppercase font-bold transition-all view-btn active" id="viewGridBtn">
+            <span class="material-symbols-outlined text-[16px]">grid_view</span>
+            <span>Grid</span>
+          </button>
+          <button class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-mono text-xs uppercase font-bold transition-all view-btn" id="viewTableBtn">
+            <span class="material-symbols-outlined text-[16px]">view_list</span>
+            <span>Table</span>
+          </button>
+        </div>
+
+        <select id="filterDept" class="bg-surface-container-high border border-outline-variant/30 text-white text-xs px-3 py-2 rounded-xl focus:outline-none font-mono">
+          <option value="all">All Departments</option>
+          <option value="Land Revenue & Settlement">Land Revenue & Settlement</option>
+          <option value="Judicial Archives">Judicial Archives</option>
+          <option value="Colonial Gazette Registry">Colonial Gazette Registry</option>
+        </select>
+
+        <a href="/api/v1/archive/export-csv" class="flex items-center gap-1 px-3 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/30 text-on-surface font-mono text-xs transition-all">
+          <span class="material-symbols-outlined text-[16px]">file_download</span>
+          <span>Export CSV</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Status Chips Tabs -->
+    <div class="flex flex-wrap items-center gap-space-xs pt-space-xs border-t border-surface-container-highest/40">
+      <button class="status-tab active flex items-center gap-space-xs px-3.5 py-1.5 rounded-full bg-primary-container text-on-primary-container font-body-sm text-xs font-semibold shadow-md transition-all" data-status="all">
+        <span>All Records</span>
+        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-surface-container-lowest/40" id="badgeAll">0</span>
+      </button>
+      <button class="status-tab flex items-center gap-space-xs px-3.5 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-body-sm text-xs transition-all" data-status="restored">
+        <span>Restored</span>
+        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-400" id="badgeRestored">0</span>
+      </button>
+      <button class="status-tab flex items-center gap-space-xs px-3.5 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-body-sm text-xs transition-all" data-status="pending_review">
+        <span>Pending Review</span>
+        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-400" id="badgePending">0</span>
+      </button>
+      <button class="status-tab flex items-center gap-space-xs px-3.5 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-body-sm text-xs transition-all" data-status="approved">
+        <span>Approved</span>
+        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400" id="badgeApproved">0</span>
+      </button>
+      <button class="status-tab flex items-center gap-space-xs px-3.5 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-body-sm text-xs transition-all" data-status="archived">
+        <span>Archived</span>
+        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-400" id="badgeArchived">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Documents Grid Container -->
+  <div id="archiveGridView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-md">
+    <div class="col-span-full py-16 text-center text-outline">Loading sovereign repository vault...</div>
+  </div>
+
+  <!-- Documents Table Container (Hidden by default) -->
+  <div id="archiveTableView" class="hidden bg-surface-container-low/90 rounded-2xl border border-outline-variant/30 p-space-md shadow-xl overflow-x-auto">
+    <table class="w-full text-left border-collapse text-xs">
+      <thead>
+        <tr class="border-b border-surface-container-highest text-outline font-mono uppercase">
+          <th class="py-3 px-3">Folio ID & Title</th>
+          <th class="py-3 px-3">Department</th>
+          <th class="py-3 px-3">Year & Language</th>
+          <th class="py-3 px-3">Status</th>
+          <th class="py-3 px-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="archiveTableBody" class="divide-y divide-surface-container-highest/40 font-body-sm"></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let currentStatus = 'all';
+  let currentView = 'grid';
+  let currentQuery = '';
+
+  const gridView = document.getElementById('archiveGridView');
+  const tableView = document.getElementById('archiveTableView');
+  const tableBody = document.getElementById('archiveTableBody');
+  const searchInput = document.getElementById('archiveSearchInput');
+  const deptFilter = document.getElementById('filterDept');
+
+  // Check URL query params for initial search
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('q')) {
+    searchInput.value = urlParams.get('q');
+    currentQuery = urlParams.get('q');
+  }
+  if (urlParams.get('status')) {
+    currentStatus = urlParams.get('status');
+  }
+
+  async function loadArchiveData() {
+    try {
+      const dept = deptFilter.value;
+      const res = await API.get(`/api/v1/archive/search?query=${encodeURIComponent(currentQuery)}&status=${currentStatus}&department=${dept}`);
+
+      document.getElementById('archiveTotalCount').textContent = res.counts.total;
+      document.getElementById('badgeAll').textContent = res.counts.total;
+      document.getElementById('badgeRestored').textContent = res.counts.restored;
+      document.getElementById('badgePending').textContent = res.counts.pending_review;
+      document.getElementById('badgeApproved').textContent = res.counts.approved;
+      document.getElementById('badgeArchived').textContent = res.counts.archived;
+
+      renderGrid(res.documents);
+      renderTable(res.documents);
+    } catch (e) {
+      console.error(e);
+      gridView.innerHTML = `<div class="col-span-full py-12 text-center text-error">Failed to connect to digital archive records.</div>`;
+    }
+  }
+
+  function getStatusPill(status) {
+    if (status === 'restored') {
+      return '<span class="px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-mono text-[11px] font-semibold">Restored</span>';
+    } else if (status === 'pending_review') {
+      return '<span class="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-mono text-[11px] font-semibold">Pending Review</span>';
+    } else if (status === 'approved') {
+      return '<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono text-[11px] font-semibold">Approved</span>';
+    } else if (status === 'archived') {
+      return '<span class="px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 font-mono text-[11px] font-semibold">Archived</span>';
+    }
+    return '<span class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono text-[11px]">Uploaded</span>';
+  }
+
+  function renderGrid(docs) {
+    if (!docs || docs.length === 0) {
+      gridView.innerHTML = `<div class="col-span-full py-16 text-center text-outline">No records matching criteria. <a href="/app/upload" class="text-secondary hover:underline">Ingest a document &rarr;</a></div>`;
+      return;
+    }
+
+    gridView.innerHTML = docs.map(d => `
+      <div class="rounded-2xl bg-surface-container-low/90 border border-outline-variant/30 hover:border-secondary/40 shadow-xl overflow-hidden hover-lift flex flex-col justify-between group">
+        <!-- Thumbnail Preview Stage -->
+        <div class="relative w-full h-48 bg-slate-950 overflow-hidden">
+          <img src="/api/v1/files/${d.restored_file_key || d.original_file_key}" alt="Folio" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"/>
+          <div class="absolute top-3 left-3">${getStatusPill(d.status)}</div>
+          <div class="absolute top-3 right-3 px-2 py-0.5 rounded bg-slate-900/90 text-tertiary font-mono text-[10px] border border-tertiary/30">
+            ${d.original_date}
+          </div>
+        </div>
+
+        <!-- Content Metadata -->
+        <div class="p-space-md flex flex-col gap-2 flex-1">
+          <div class="flex flex-col min-w-0">
+            <span class="font-mono text-[10px] text-secondary font-semibold">${d.document_id} • ${d.archive_reference_id || 'REF-GEN'}</span>
+            <a href="/app/archive/${d.document_id}" class="font-headline-sm text-sm font-bold text-white hover:text-secondary truncate mt-0.5" title="${d.title}">${d.title}</a>
+          </div>
+          <p class="text-xs text-on-surface-variant line-clamp-2">${d.description || 'Sovereign archive record.'}</p>
+          <div class="mt-2 pt-2 border-t border-surface-container-highest/60 flex items-center justify-between text-[11px] text-outline font-mono">
+            <span>${d.department_id}</span>
+            <span>${d.current_version_id || 'v1.0'}</span>
+          </div>
+        </div>
+
+        <!-- Action Ribbon -->
+        <div class="p-3 bg-surface-container-lowest/80 border-t border-surface-container-highest/50 flex items-center justify-between">
+          <a href="/app/archive/${d.document_id}" class="text-xs text-secondary hover:underline font-semibold flex items-center gap-1">
+            <span>Details</span>
+            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </a>
+          <div class="flex items-center gap-1.5">
+            <a href="/app/restoration?document_id=${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary" title="Studio">
+              <span class="material-symbols-outlined text-[16px]">auto_fix_high</span>
+            </a>
+            <a href="/app/damage-analysis?document_id=${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-tertiary" title="Damage Heatmaps">
+              <span class="material-symbols-outlined text-[16px]">biotech</span>
+            </a>
+            <a href="/app/ocr?document_id=${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary" title="OCR Transcription">
+              <span class="material-symbols-outlined text-[16px]">document_scanner</span>
+            </a>
+            <a href="/app/history/${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-slate-300" title="Version Lineage">
+              <span class="material-symbols-outlined text-[16px]">history_toggle_off</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderTable(docs) {
+    tableBody.innerHTML = docs.map(d => `
+      <tr class="hover:bg-surface-container-high/40 transition-colors">
+        <td class="py-3 px-3">
+          <div class="flex items-center gap-3">
+            <img src="/api/v1/files/${d.original_file_key}" alt="Preview" class="w-10 h-12 object-cover rounded shadow shrink-0"/>
+            <div class="flex flex-col min-w-0">
+              <a href="/app/archive/${d.document_id}" class="font-semibold text-white hover:text-secondary truncate max-w-xs">${d.title}</a>
+              <span class="font-mono text-xs text-outline">${d.document_id} • ${d.archive_reference_id}</span>
+            </div>
+          </div>
+        </td>
+        <td class="py-3 px-3 text-slate-300">${d.department_id}</td>
+        <td class="py-3 px-3 font-mono text-xs text-slate-400">${d.original_date} • ${d.language}</td>
+        <td class="py-3 px-3">${getStatusPill(d.status)}</td>
+        <td class="py-3 px-3 text-right">
+          <div class="flex items-center justify-end gap-1.5">
+            <a href="/app/archive/${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface" title="Inspect">
+              <span class="material-symbols-outlined text-[16px]">visibility</span>
+            </a>
+            <a href="/app/restoration?document_id=${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary" title="Studio">
+              <span class="material-symbols-outlined text-[16px]">auto_fix_high</span>
+            </a>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // Search
+  searchInput.addEventListener('input', (e) => {
+    currentQuery = e.target.value.trim();
+    loadArchiveData();
+  });
+
+  deptFilter.addEventListener('change', loadArchiveData);
+
+  // Status Tabs
+  document.querySelectorAll('.status-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.status-tab').forEach(t => {
+        t.classList.remove('active', 'bg-primary-container', 'text-on-primary-container', 'shadow-md');
+        t.classList.add('bg-surface-container', 'text-on-surface-variant');
+      });
+      tab.classList.add('active', 'bg-primary-container', 'text-on-primary-container', 'shadow-md');
+      tab.classList.remove('bg-surface-container', 'text-on-surface-variant');
+      currentStatus = tab.getAttribute('data-status');
+      loadArchiveData();
+    });
+  });
+
+  // View Toggle
+  document.getElementById('viewGridBtn').addEventListener('click', function() {
+    this.classList.add('active', 'bg-primary-container', 'text-on-primary-container');
+    document.getElementById('viewTableBtn').classList.remove('active', 'bg-primary-container', 'text-on-primary-container');
+    gridView.classList.remove('hidden');
+    tableView.classList.add('hidden');
+  });
+
+  document.getElementById('viewTableBtn').addEventListener('click', function() {
+    this.classList.add('active', 'bg-primary-container', 'text-on-primary-container');
+    document.getElementById('viewGridBtn').classList.remove('active', 'bg-primary-container', 'text-on-primary-container');
+    gridView.classList.add('hidden');
+    tableView.classList.remove('hidden');
+  });
+
+  document.addEventListener('DOMContentLoaded', loadArchiveData);
+</script>
+{% endblock %}
+

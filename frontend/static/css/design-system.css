@@ -1,0 +1,99 @@
+/* ==========================================================================
+   ArchiveGov AI — Neoclassical Futuristic Archival Design System
+   ========================================================================== */
+
+:root {
+  --bg-primary: #070B1C;
+  --bg-secondary: #0B1230;
+  --bg-card: #0F172A;
+  --bg-card-hover: #162248;
+  --surface-container-lowest: #090d1e;
+  --surface-container-low: #171b2c;
+  --surface-container: #1b1f30;
+  --surface-container-high: #25293b;
+  --surface-container-highest: #303447;
+  
+  --accent-purple: #8B5CF6;
+  --accent-neon-purple: #A855F7;
+  --accent-cyan: #22D3EE;
+  --accent-gold: #F5C56B;
+  --accent-gold-light: #FFE3A8;
+  --accent-success: #34D399;
+  --accent-error: #EF4444;
+  
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  
+  --border-subtle: rgba(139, 92, 246, 0.18);
+  --border-glow: rgba(34, 211, 238, 0.35);
+  --border-gold: rgba(245, 197, 107, 0.28);
+  
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Glassmorphism Cards */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+}
+
+.glass-panel-gold {
+  background: rgba(17, 26, 54, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-gold);
+}
+
+/* Glowing Neon Elements */
+.glow-purple {
+  box-shadow: 0 0 24px -2px rgba(139, 92, 246, 0.45);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px -2px rgba(34, 211, 238, 0.35);
+}
+
+.glow-gold {
+  box-shadow: 0 0 25px -4px rgba(245, 197, 107, 0.3);
+}
+
+/* Historical Parchment Visualization */
+.parchment-stage {
+  background: radial-gradient(circle at 50% 50%, #151c36 0%, #070B1C 90%);
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 70%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #070B1C;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f294d;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-purple);
+}
+

@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Restoration Result & Review — ArchiveGov AI{% endblock %}
+
+{% block content %}
+<div class="relative w-full px-space-md lg:px-space-xl py-space-lg flex flex-col gap-space-lg">
+  <!-- Top Result Header -->
+  <div class="bg-surface-container-low/90 backdrop-blur-xl border border-outline-variant/30 p-space-md rounded-2xl shadow-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-space-md">
+    <div class="flex items-center gap-space-md">
+      <a href="/app/restoration?document_id={{ document.document_id if document else 'DOC-1912-KDL' }}" class="p-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface">
+        <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+      </a>
+      <div class="flex flex-col">
+        <div class="flex items-center gap-2 font-mono text-xs text-secondary mb-1">
+          <span>RESTORATION VERDICT //</span>
+          {% if all_documents %}
+          <select 
+            id="resultDocSelector" 
+            onchange="window.location.href='/app/restoration-result?document_id=' + this.value"
+            class="bg-surface-container-high text-xs text-on-surface font-mono rounded px-2 py-0.5 border border-secondary/40 focus:border-secondary outline-none shadow-sm cursor-pointer hover:bg-surface-container-highest transition-colors"
+          >
+            {% for d in all_documents %}
+              <option value="{{ d.document_id }}" {% if document and d.document_id == document.document_id %}selected{% endif %}>
+                {{ d.document_id }} — {{ d.title[:30] }}
+              </option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <span class="text-tertiary font-bold">{{ document.document_id if document else 'DOC-1912-KDL' }}</span>
+          {% endif %}
+          <span class="text-slate-500">•</span>
+          <span class="text-emerald-400 font-semibold">Master Version v2.0 Ready</span>
+        </div>
+        <h1 class="font-headline-md text-2xl font-bold text-white tracking-tight">
+          {{ document.title if document else '1912 Land Settlement Deed — Kuddalur Revenue District' }}
+        </h1>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <span class="px-3 py-1.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-mono text-xs font-semibold flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        Status: {{ document.status.replace('_', ' ').capitalize() if document else 'Pending Review' }}
+      </span>
+      <a href="/api/v1/files/{% if document and document.restored_file_key %}{{ document.restored_file_key }}{% elif document and document.original_file_key %}{{ document.original_file_key }}{% else %}doc_1912_kdl_rest.png{% endif %}" download class="px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 text-white font-mono text-xs font-semibold flex items-center gap-1.5">
+        <span class="material-symbols-outlined text-[16px]">download</span>
+        <span>Download Restored Master</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Main 2-Column Inspection Grid -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+    <!-- Left: Before / After Split Slider Stage (8 cols) -->
+    <div class="xl:col-span-8 flex flex-col gap-space-md">
+      <div class="relative w-full h-[540px] rounded-2xl bg-slate-950 border border-outline-variant/30 shadow-2xl overflow-hidden select-none" id="resultStage">
+        <!-- Restored Image Back -->
+        <img 
+          src="{% if document and document.restored_file_key %}/api/v1/files/{{ document.restored_file_key }}{% elif document and document.original_file_key %}/api/v1/files/{{ document.original_file_key }}{% else %}/api/v1/files/doc_1912_kdl_rest.png{% endif %}" 
+          alt="Restored Master" 
+          class="w-full h-full object-cover object-center absolute inset-0"
+        />
+        <div class="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/90 border border-secondary/40 text-secondary font-mono text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-secondary"></span> Restored Master (v2.0)
+        </div>
+
+        <!-- Degraded Image Overlay -->
+        <div class="absolute inset-y-0 left-0 overflow-hidden z-10" id="resultOverlay" style="width: 50%;">
+          <div class="relative w-full h-full" style="width: 200%;">
+            <img 
+              src="{% if document %}/api/v1/files/{{ document.original_file_key }}{% else %}/api/v1/files/doc_1912_kdl_orig.png{% endif %}" 
+              alt="Original Degraded" 
+              class="w-full h-full object-cover object-center filter sepia-30 contrast-95"
+            />
+          </div>
+        </div>
+        <div class="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/90 border border-error/40 text-error font-mono text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-error"></span> Original Degraded (v1.0)
+        </div>
+
+        <!-- Split Slider Divider -->
+        <div class="absolute top-0 bottom-0 z-30 flex items-center justify-center cursor-ew-resize" id="resultDivider" style="left: calc(50% - 14px); width: 28px;">
+          <div class="w-0.5 h-full bg-gradient-to-b from-primary via-secondary to-primary shadow-[0_0_12px_rgba(93,230,255,0.8)]"></div>
+          <div class="absolute w-8 h-8 rounded-full bg-surface-container-lowest border border-secondary shadow-[0_0_18px_rgba(160,120,255,0.6)] flex items-center justify-center text-secondary">
+            <span class="material-symbols-outlined text-[18px]">code</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Quality Telemetry & Official Review Form (4 cols) -->
+    <div class="xl:col-span-4 flex flex-col gap-space-md">
+      <!-- Quality Telemetry Card -->
+      <div class="bg-surface-container-low/95 rounded-2xl border border-outline-variant/30 p-space-lg shadow-xl flex flex-col gap-3 font-mono text-xs">
+        <span class="font-label-caps text-label-caps text-outline uppercase font-semibold">Scientific Quality Evaluation</span>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="p-3 rounded-xl bg-surface-container-lowest flex flex-col">
+            <span class="text-slate-400 text-[10px]">Restoration Fidelity</span>
+            <span class="text-emerald-400 text-lg font-bold">98.7%</span>
+          </div>
+          <div class="p-3 rounded-xl bg-surface-container-lowest flex flex-col">
+            <span class="text-slate-400 text-[10px]">Peak SNR (PSNR)</span>
+            <span class="text-secondary text-lg font-bold">29.1 dB</span>
+          </div>
+          <div class="p-3 rounded-xl bg-surface-container-lowest flex flex-col">
+            <span class="text-slate-400 text-[10px]">Structural SSIM</span>
+            <span class="text-tertiary text-lg font-bold">0.963</span>
+          </div>
+          <div class="p-3 rounded-xl bg-surface-container-lowest flex flex-col">
+            <span class="text-slate-400 text-[10px]">Laplacian Sharpness</span>
+            <span class="text-primary text-lg font-bold">324.5</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Human Review & Verdict Form -->
+      <div class="bg-surface-container-low/95 rounded-2xl border border-tertiary/40 p-space-lg shadow-xl flex flex-col gap-space-md">
+        <div class="flex items-center gap-2 border-b border-surface-container-highest/60 pb-space-xs">
+          <span class="material-symbols-outlined text-tertiary text-[22px]">verified_user</span>
+          <h3 class="font-headline-sm text-sm text-white font-bold">Archival Reviewer Sign-off</h3>
+        </div>
+
+        <form id="reviewForm" class="space-y-4 text-xs font-sans">
+          <div>
+            <label class="block font-mono uppercase text-slate-300 mb-1.5">Official Verdict Decision</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="p-2 rounded-xl bg-surface-container-lowest border border-emerald-500/30 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-950/40 transition-colors">
+                <input type="radio" name="decision" value="approve" checked class="accent-emerald-400 mb-1"/>
+                <span class="text-emerald-400 font-semibold font-mono text-[11px]">Approve</span>
+              </label>
+              <label class="p-2 rounded-xl bg-surface-container-lowest border border-amber-500/30 flex flex-col items-center justify-center cursor-pointer hover:bg-amber-950/40 transition-colors">
+                <input type="radio" name="decision" value="needs_correction" class="accent-amber-400 mb-1"/>
+                <span class="text-amber-400 font-semibold font-mono text-[10px]">Changes Req.</span>
+              </label>
+              <label class="p-2 rounded-xl bg-surface-container-lowest border border-red-500/30 flex flex-col items-center justify-center cursor-pointer hover:bg-red-950/40 transition-colors">
+                <input type="radio" name="decision" value="reject" class="accent-red-400 mb-1"/>
+                <span class="text-red-400 font-semibold font-mono text-[11px]">Reject</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-mono uppercase text-slate-300 mb-1">Archival Inspection Comments</label>
+            <textarea id="reviewComments" required rows="3" placeholder="Restoration verified under archival preservation standards. Seals and script legible." class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-tertiary text-white text-xs p-3 rounded-xl resize-none"></textarea>
+          </div>
+
+          <button 
+            type="submit" 
+            id="submitReviewBtn"
+            class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-tertiary via-tertiary to-amber-500 hover:brightness-110 text-[#070B1C] font-mono text-xs font-bold uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2"
+          >
+            <span class="material-symbols-outlined text-[18px]">verified</span>
+            <span>Record Official Decision</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Split Slider
+  const stage = document.getElementById('resultStage');
+  const overlay = document.getElementById('resultOverlay');
+  const divider = document.getElementById('resultDivider');
+  let isDragging = false;
+
+  function updateSplit(clientX) {
+    const rect = stage.getBoundingClientRect();
+    let pos = (clientX - rect.left) / rect.width;
+    pos = Math.max(0.02, Math.min(0.98, pos));
+    const pct = pos * 100;
+    overlay.style.width = `${pct}%`;
+    divider.style.left = `calc(${pct}% - 14px)`;
+  }
+
+  divider.addEventListener('mousedown', () => isDragging = true);
+  window.addEventListener('mouseup', () => isDragging = false);
+  window.addEventListener('mousemove', (e) => {
+    if (isDragging) updateSplit(e.clientX);
+  });
+
+  // Review Form Submit
+  const form = document.getElementById('reviewForm');
+  const docId = "{{ document.document_id if document else 'DOC-1912-KDL' }}";
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const decision = document.querySelector('input[name="decision"]:checked').value;
+    const comments = document.getElementById('reviewComments').value.trim();
+    const btn = document.getElementById('submitReviewBtn');
+
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Submitting Verdict...`;
+
+    try {
+      const res = await API.post(`/api/v1/reviews/${docId}/decision`, {
+        decision: decision,
+        comments: comments
+      });
+
+      Toast.success(res.message, 'Review Verdict Recorded');
+      setTimeout(() => {
+        window.location.href = `/app/archive/${docId}`;
+      }, 1200);
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = `<span>Record Official Decision</span>`;
+      Toast.error(err.message, 'Sign-off Blocked');
+    }
+  });
+</script>
+{% endblock %}
+

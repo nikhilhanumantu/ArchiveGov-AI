@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: archivegov_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: archivegov_db
+    volumes:
+      - mongo_data:/data/db
+
+  app:
+    build: .
+    container_name: archivegov_app
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DB_NAME=archivegov_db
+      - ENV=production
+      - SECRET_KEY=archival-production-key-change-in-prod-f83a09b
+      - DEVICE=cpu
+    volumes:
+      - ./uploads:/app/uploads
+      - ./backend/data:/app/backend/data
+    depends_on:
+      - mongodb
+
+volumes:
+  mongo_data:
+

@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — ArchiveGov AI Sovereign Records Restorer{% endblock %}
+
+{% block content %}
+<div class="relative w-full overflow-hidden px-space-lg py-space-md flex flex-col gap-space-lg">
+  <!-- Subtle Ambient Glow Orbs -->
+  <div class="pointer-events-none absolute -top-24 left-1/4 h-96 w-96 rounded-full bg-primary-container/10 blur-[120px]"></div>
+  <div class="pointer-events-none absolute top-40 right-10 h-80 w-80 rounded-full bg-secondary/10 blur-[100px]"></div>
+
+  <!-- Institutional Welcome Banner -->
+  <div class="relative w-full rounded-2xl bg-surface-container-low/90 backdrop-blur-xl p-space-lg shadow-xl border border-outline-variant/30 overflow-hidden">
+    <div class="pointer-events-none absolute -right-6 -bottom-10 opacity-[0.05] select-none text-on-surface">
+      <span class="material-symbols-outlined text-[240px]">account_balance</span>
+    </div>
+    <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-surface-container-low via-surface-container/60 to-transparent"></div>
+
+    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-space-md">
+      <div class="flex flex-col gap-space-xs max-w-3xl">
+        <div class="flex items-center gap-space-xs">
+          <span class="px-space-sm py-0.5 rounded-full bg-surface-container-high text-tertiary font-label-caps text-label-caps uppercase flex items-center gap-1.5 border border-tertiary/20">
+            <span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+            Preservation Protocol Active
+          </span>
+          <span class="font-telemetry-code text-telemetry-code text-outline">SESSION // SEC-2024-NDR</span>
+        </div>
+        <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">
+          Reviving Government History with <span class="bg-gradient-to-r from-primary via-secondary to-tertiary bg-clip-text text-transparent">Generative AI</span>
+        </h1>
+        <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          Welcome back, <span class="text-on-surface font-semibold">{{ user.name if user else 'Archive Officer' }}</span> (<span class="text-secondary font-medium">{{ user.department_id if user else 'Govt. Archives Department' }}</span>). Neural reconstruction clusters are operating at certified peak fidelity across historical revenue records and court deeds.
+        </p>
+      </div>
+
+      <!-- Quick Telemetry Badge Card -->
+      <div class="flex items-center gap-space-md bg-surface-container-lowest/90 p-space-md rounded-xl shrink-0 shadow-inner border border-outline-variant/40">
+        <div class="flex flex-col">
+          <span class="font-label-caps text-label-caps text-outline uppercase">Active Models</span>
+          <span class="font-telemetry-code text-telemetry-code text-secondary font-semibold">Real-ESRGAN v4.1</span>
+          <span class="font-telemetry-code text-telemetry-code text-on-surface-variant">LaMa Inpainter Pro</span>
+        </div>
+        <div class="w-px h-10 bg-surface-container-highest"></div>
+        <div class="flex flex-col">
+          <span class="font-label-caps text-label-caps text-outline uppercase">Throughput</span>
+          <span class="font-telemetry-code text-telemetry-code text-tertiary font-semibold" id="telemetryThroughput">412 pg/hr</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px] text-secondary">verified</span> Nominal
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Metric Cards Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+    <!-- Total Documents -->
+    <a href="/app/archive" class="relative rounded-xl bg-surface-container-low/85 backdrop-blur-md p-space-md shadow-lg border border-outline-variant/30 flex flex-col justify-between group hover-lift">
+      <div class="flex items-start justify-between">
+        <div class="flex flex-col">
+          <span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Total Documents</span>
+          <span class="font-headline-lg text-headline-lg text-on-surface mt-space-xs font-bold" id="kpiTotalDocs">0</span>
+        </div>
+        <div class="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:scale-105 transition-transform shadow-md">
+          <span class="material-symbols-outlined text-[24px]">folder_special</span>
+        </div>
+      </div>
+      <div class="mt-space-md pt-space-xs flex items-center justify-between border-t border-surface-container-highest/60">
+        <div class="flex items-center gap-1 font-telemetry-code text-telemetry-code text-secondary">
+          <span class="material-symbols-outlined text-[16px]">trending_up</span>
+          <span>Active Ingestion</span>
+        </div>
+        <span class="font-body-sm text-body-sm text-outline">in vault</span>
+      </div>
+    </a>
+
+    <!-- Restored Records -->
+    <a href="/app/archive?status=restored" class="relative rounded-xl bg-surface-container-low/85 backdrop-blur-md p-space-md shadow-lg border border-outline-variant/30 flex flex-col justify-between group hover-lift">
+      <div class="flex items-start justify-between">
+        <div class="flex flex-col">
+          <span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Restored Records</span>
+          <span class="font-headline-lg text-headline-lg text-secondary mt-space-xs font-bold" id="kpiRestored">0</span>
+        </div>
+        <div class="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary group-hover:scale-105 transition-transform shadow-md">
+          <span class="material-symbols-outlined text-[24px]">auto_fix_high</span>
+        </div>
+      </div>
+      <div class="mt-space-md pt-space-xs flex items-center justify-between border-t border-surface-container-highest/60">
+        <div class="flex items-center gap-1 font-telemetry-code text-telemetry-code text-secondary">
+          <span class="material-symbols-outlined text-[16px]">bolt</span>
+          <span>100% Neural Fidelity</span>
+        </div>
+        <span class="font-body-sm text-body-sm text-on-surface-variant">via LaMa & ESRGAN</span>
+      </div>
+    </a>
+
+    <!-- Pending Review -->
+    <a href="/app/archive?status=pending_review" class="relative rounded-xl bg-surface-container-low/85 backdrop-blur-md p-space-md shadow-lg border border-outline-variant/30 flex flex-col justify-between group hover-lift">
+      <div class="flex items-start justify-between">
+        <div class="flex flex-col">
+          <span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Pending Review</span>
+          <span class="font-headline-lg text-headline-lg text-tertiary mt-space-xs font-bold" id="kpiPendingReview">0</span>
+        </div>
+        <div class="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary group-hover:scale-105 transition-transform shadow-md">
+          <span class="material-symbols-outlined text-[24px]">pending_actions</span>
+        </div>
+      </div>
+      <div class="mt-space-md pt-space-xs flex items-center justify-between border-t border-surface-container-highest/60">
+        <span class="px-space-xs py-0.5 rounded bg-tertiary/15 font-label-caps text-label-caps text-tertiary uppercase">
+          Awaiting Sign-off
+        </span>
+        <span class="font-telemetry-code text-telemetry-code text-outline">Priority High</span>
+      </div>
+    </a>
+
+    <!-- Average Restoration Quality -->
+    <div class="relative rounded-xl bg-surface-container-low/85 backdrop-blur-md p-space-md shadow-lg border border-outline-variant/30 flex flex-col justify-between group hover-lift">
+      <div class="flex items-start justify-between">
+        <div class="flex flex-col">
+          <span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Average Quality</span>
+          <span class="font-headline-lg text-headline-lg text-on-surface mt-space-xs font-bold" id="kpiAvgQuality">98.7%</span>
+        </div>
+        <div class="w-11 h-11 rounded-lg bg-surface-container-high flex items-center justify-center text-primary group-hover:scale-105 transition-transform shadow-md">
+          <span class="material-symbols-outlined text-[24px]">verified_user</span>
+        </div>
+      </div>
+      <div class="mt-space-md pt-space-xs flex items-center justify-between border-t border-surface-container-highest/60">
+        <div class="flex items-center gap-1 font-telemetry-code text-telemetry-code text-secondary">
+          <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+          <span id="kpiPsnr">29.1 dB PSNR</span>
+        </div>
+        <span class="font-body-sm text-body-sm text-on-surface-variant">SSIM: 0.963</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Action Launchpad -->
+  <div class="rounded-xl bg-surface-container-low/90 border border-outline-variant/30 p-space-md shadow-lg">
+    <div class="flex items-center justify-between mb-space-sm">
+      <div class="flex items-center gap-space-xs">
+        <span class="material-symbols-outlined text-[18px] text-tertiary">bolt</span>
+        <span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Quick Archival Actions</span>
+      </div>
+      <span class="font-label-caps text-label-caps text-outline uppercase">One-Click Neural Execution</span>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-space-sm">
+      <a class="flex items-center gap-space-sm p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors group" href="/app/upload">
+        <div class="w-10 h-10 rounded-lg bg-primary-container/20 text-primary flex items-center justify-center group-hover:scale-105 transition-transform">
+          <span class="material-symbols-outlined text-[22px]">upload_file</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-body-md text-body-md font-semibold text-on-surface truncate">Ingest Record</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant truncate">Upload deed scan</span>
+        </div>
+      </a>
+
+      <a class="flex items-center gap-space-sm p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors group" href="/app/restoration">
+        <div class="w-10 h-10 rounded-lg bg-secondary-container/20 text-secondary flex items-center justify-center group-hover:scale-105 transition-transform">
+          <span class="material-symbols-outlined text-[22px]">auto_fix_high</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-body-md text-body-md font-semibold text-on-surface truncate">Restoration Studio</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant truncate">Launch dual-tensor</span>
+        </div>
+      </a>
+
+      <a class="flex items-center gap-space-sm p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors group" href="/app/damage-analysis">
+        <div class="w-10 h-10 rounded-lg bg-tertiary-container/20 text-tertiary flex items-center justify-center group-hover:scale-105 transition-transform">
+          <span class="material-symbols-outlined text-[22px]">biotech</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-body-md text-body-md font-semibold text-on-surface truncate">Spectral Defect Map</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant truncate">Inspect tears & stains</span>
+        </div>
+      </a>
+
+      <a class="flex items-center gap-space-sm p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors group" href="/app/ocr">
+        <div class="w-10 h-10 rounded-lg bg-primary/20 text-primary-fixed-dim flex items-center justify-center group-hover:scale-105 transition-transform">
+          <span class="material-symbols-outlined text-[22px]">document_scanner</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-body-md text-body-md font-semibold text-on-surface truncate">Neural OCR Stream</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant truncate">Extract & edit text</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Main 2-Column Section: Recent Records & In-Flight Jobs -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+    <!-- Left: Recent Archival Documents (8 cols) -->
+    <div class="xl:col-span-8 flex flex-col gap-space-md bg-surface-container-low/90 rounded-2xl border border-outline-variant/30 p-space-lg shadow-xl">
+      <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-sm">
+        <div class="flex items-center gap-space-xs">
+          <span class="material-symbols-outlined text-secondary text-[22px]">history_edu</span>
+          <h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Active Archival Records in Pipeline</h2>
+        </div>
+        <a href="/app/archive" class="font-body-sm text-body-sm text-secondary hover:underline flex items-center gap-1">
+          <span>View All in Vault</span>
+          <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+        </a>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-surface-container-highest text-outline font-label-caps text-label-caps uppercase">
+              <th class="py-3 px-3">Document Folio</th>
+              <th class="py-3 px-3">Classification & Date</th>
+              <th class="py-3 px-3">Pipeline Status</th>
+              <th class="py-3 px-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dashboardDocList" class="divide-y divide-surface-container-highest/40 font-body-sm">
+            <tr>
+              <td colspan="4" class="py-6 text-center text-outline">Loading sovereign repository records...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: Pending Reviewers Sign-off & System Health (4 cols) -->
+    <div class="xl:col-span-4 flex flex-col gap-space-md">
+      <!-- Priority Review Box -->
+      <div class="bg-surface-container-low/90 rounded-2xl border border-tertiary/30 p-space-lg shadow-xl flex flex-col gap-space-md">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-tertiary text-[22px]">pending_actions</span>
+            <span class="font-headline-sm text-base text-on-surface font-bold">Awaiting Human Sign-off</span>
+          </div>
+          <span class="px-2 py-0.5 rounded-full bg-tertiary/20 text-tertiary font-mono text-[11px] font-bold">Priority</span>
+        </div>
+        <p class="text-xs text-on-surface-variant">Restorations completed by AI requiring official archivist review before sovereign commitment.</p>
+
+        <div class="p-3.5 rounded-xl bg-surface-container-lowest border border-outline-variant/30 flex items-start gap-3">
+          <img src="/api/v1/files/doc_1912_kdl_orig.png" alt="Thumbnail" class="w-14 h-16 object-cover rounded shadow-md shrink-0"/>
+          <div class="flex flex-col min-w-0 flex-1">
+            <span class="font-headline-sm text-xs font-semibold text-white truncate">1912 Land Settlement Deed</span>
+            <span class="font-mono text-[10px] text-tertiary mt-0.5">REC-1912-KDL-V09</span>
+            <span class="text-[11px] text-slate-400 mt-1">Fidelity: 98.7% • V2.0 Restored</span>
+            <div class="mt-3 flex items-center gap-2">
+              <a href="/app/restoration-result?document_id=DOC-1912-KDL" class="px-3 py-1 rounded-lg bg-tertiary text-[#070B1C] font-semibold text-xs hover:brightness-110 transition-all flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">fact_check</span>
+                <span>Review & Sign</span>
+              </a>
+              <a href="/app/restoration?document_id=DOC-1912-KDL" class="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-xs text-on-surface transition-all">Studio</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Engine Node Diagnostics -->
+      <div class="bg-surface-container-low/90 rounded-2xl border border-outline-variant/30 p-space-md shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <span class="font-label-caps text-label-caps text-outline uppercase">Neural Node Cluster</span>
+          <span class="font-mono text-xs text-emerald-400 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Healthy
+          </span>
+        </div>
+        <div class="space-y-2 text-xs font-mono">
+          <div class="flex justify-between p-2 rounded bg-surface-container-lowest">
+            <span class="text-slate-400">OpenCV Preprocessor</span>
+            <span class="text-secondary">v5.0-Headless [Ready]</span>
+          </div>
+          <div class="flex justify-between p-2 rounded bg-surface-container-lowest">
+            <span class="text-slate-400">Super-Resolution</span>
+            <span class="text-secondary">Real-ESRGAN v4.1 [Ready]</span>
+          </div>
+          <div class="flex justify-between p-2 rounded bg-surface-container-lowest">
+            <span class="text-slate-400">Inpainting Model</span>
+            <span class="text-secondary">LaMa Big-Mask [Ready]</span>
+          </div>
+          <div class="flex justify-between p-2 rounded bg-surface-container-lowest">
+            <span class="text-slate-400">Multilingual OCR</span>
+            <span class="text-secondary">PaddleOCR Stream [Ready]</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  async function loadDashboardData() {
+    try {
+      const analytics = await API.get('/api/v1/analytics/overview');
+      animateCountUp(document.getElementById('kpiTotalDocs'), analytics.kpi.total_documents);
+      animateCountUp(document.getElementById('kpiRestored'), analytics.kpi.restored_records);
+      animateCountUp(document.getElementById('kpiPendingReview'), analytics.kpi.pending_review);
+      document.getElementById('kpiAvgQuality').textContent = `${analytics.kpi.average_quality_pct}%`;
+      document.getElementById('kpiPsnr').textContent = `${analytics.kpi.average_psnr_db} dB PSNR`;
+
+      const docsRes = await API.get('/api/v1/documents?limit=6');
+      const tbody = document.getElementById('dashboardDocList');
+
+      if (!docsRes.documents || docsRes.documents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-outline">No documents in vault. <a href="/app/upload" class="text-secondary hover:underline">Ingest your first record &rarr;</a></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = docsRes.documents.map(d => {
+        let statusBadge = '';
+        if (d.status === 'restored') {
+          statusBadge = '<span class="px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-mono text-[11px] font-semibold">Restored</span>';
+        } else if (d.status === 'pending_review') {
+          statusBadge = '<span class="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-mono text-[11px] font-semibold">Pending Review</span>';
+        } else if (d.status === 'approved') {
+          statusBadge = '<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono text-[11px] font-semibold">Approved</span>';
+        } else {
+          statusBadge = '<span class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono text-[11px]">Uploaded</span>';
+        }
+
+        return `
+          <tr class="hover:bg-surface-container-high/40 transition-colors">
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-3">
+                <img src="/api/v1/files/${d.original_file_key}" alt="Preview" class="w-10 h-12 object-cover rounded shadow shrink-0"/>
+                <div class="flex flex-col min-w-0">
+                  <a href="/app/archive/${d.document_id}" class="font-semibold text-on-surface hover:text-secondary truncate max-w-xs">${d.title}</a>
+                  <span class="font-mono text-xs text-outline">${d.document_id} • ${d.archive_reference_id || 'REF-GEN'}</span>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3">
+              <div class="flex flex-col">
+                <span class="text-on-surface">${d.department_id}</span>
+                <span class="font-mono text-xs text-tertiary">Folio ${d.original_date}</span>
+              </div>
+            </td>
+            <td class="py-3 px-3">${statusBadge}</td>
+            <td class="py-3 px-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <a href="/app/restoration?document_id=${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary" title="Open Studio">
+                  <span class="material-symbols-outlined text-[18px]">auto_fix_high</span>
+                </a>
+                <a href="/app/damage-analysis?document_id=${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-tertiary" title="Damage Heatmaps">
+                  <span class="material-symbols-outlined text-[18px]">biotech</span>
+                </a>
+                <a href="/app/ocr?document_id=${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary" title="OCR Text">
+                  <span class="material-symbols-outlined text-[18px]">document_scanner</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+    } catch (e) {
+      console.error("Dashboard data load error:", e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadDashboardData);
+</script>
+{% endblock %}
+

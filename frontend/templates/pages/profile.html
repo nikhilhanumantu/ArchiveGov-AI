@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile & Security Clearance — ArchiveGov AI{% endblock %}
+
+{% block content %}
+<div class="relative w-full p-space-md lg:p-space-xl space-y-space-lg overflow-hidden">
+  <!-- Glowing ambient blur effects -->
+  <div class="pointer-events-none absolute -top-24 right-1/4 w-96 h-96 bg-primary-container/10 rounded-full blur-3xl"></div>
+  <div class="pointer-events-none absolute top-1/3 left-10 w-80 h-80 bg-secondary/10 rounded-full blur-3xl"></div>
+
+  <!-- Header -->
+  <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+    <div class="flex flex-col">
+      <div class="flex items-center gap-space-xs text-secondary mb-1">
+        <span class="material-symbols-outlined text-[20px]">account_circle</span>
+        <span class="font-telemetry-code text-telemetry-code tracking-wider uppercase">Identity & Access Management</span>
+      </div>
+      <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Operator Profile</h1>
+      <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">View your government archival security credentials, clearance tier, and update authentication factors.</p>
+    </div>
+
+    <div class="flex items-center gap-space-sm">
+      <div class="flex items-center gap-space-xs px-space-sm py-1.5 rounded-xl bg-surface-container-high border border-surface-container-high/60 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+        <span class="font-telemetry-code text-[12px] text-secondary">Authenticated Sovereign Session</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Profile Content Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+    <!-- Left Column: User Card (lg:col-span-4) -->
+    <div class="lg:col-span-4 flex flex-col gap-space-md">
+      <div class="p-space-lg rounded-2xl bg-surface-container-low/90 backdrop-blur-xl border border-surface-container-high/40 shadow-xl flex flex-col items-center text-center">
+        <!-- Big Avatar -->
+        <div class="relative mb-4">
+          <div id="profileAvatar" class="w-24 h-24 rounded-2xl bg-gradient-to-tr from-primary-container via-tertiary-container to-secondary flex items-center justify-center text-on-primary-container font-headline-lg text-[28px] font-bold shadow-[0_0_24px_rgba(160,120,255,0.4)]">
+            AO
+          </div>
+          <span class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-secondary ring-4 ring-surface-container-low"></span>
+        </div>
+
+        <h2 id="profileFullName" class="font-headline-sm text-headline-sm text-on-surface font-semibold">Archive Officer</h2>
+        <span id="profileEmail" class="font-telemetry-code text-body-sm text-on-surface-variant mt-0.5">officer@archivegov.ai</span>
+
+        <div class="mt-4 flex items-center gap-2 flex-wrap justify-center">
+          <span id="profileRoleBadge" class="px-3 py-1 rounded-full text-[12px] font-telemetry-code font-bold bg-primary/15 text-primary border border-primary/30">
+            Archive Officer
+          </span>
+          <span class="px-3 py-1 rounded-full text-[11px] font-telemetry-code font-bold bg-secondary/10 text-secondary border border-secondary/20">
+            SEC-L4 AUTHORIZED
+          </span>
+        </div>
+
+        <div class="w-full mt-6 pt-6 border-t border-surface-container-high/40 text-left space-y-3 font-body-sm text-body-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-tertiary">badge</span> Employee ID
+            </span>
+            <span id="profileEmpId" class="font-telemetry-code text-on-surface font-semibold">GOV-ARC-002</span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-tertiary">apartment</span> Department
+            </span>
+            <span id="profileDepartment" class="text-on-surface font-medium">State Historical Records Dept.</span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-on-surface-variant flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-tertiary">verified_user</span> Status
+            </span>
+            <span class="font-telemetry-code text-secondary font-semibold">Active & Certified</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Session Stats -->
+      <div class="p-space-md rounded-2xl bg-surface-container-low/80 backdrop-blur-md border border-surface-container-high/40 space-y-3 font-body-sm text-body-sm">
+        <span class="font-label-caps text-label-caps uppercase text-outline tracking-wider">Access Scope & Clearance</span>
+        <div class="space-y-2">
+          <div class="p-2.5 rounded-xl bg-surface-container-high/50 flex items-center justify-between">
+            <span class="text-on-surface">Restoration Pipeline Execution</span>
+            <span class="font-telemetry-code text-[12px] text-secondary font-bold">GRANTED</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-surface-container-high/50 flex items-center justify-between">
+            <span class="text-on-surface">Generative Inpainting Studio</span>
+            <span class="font-telemetry-code text-[12px] text-secondary font-bold">GRANTED</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-surface-container-high/50 flex items-center justify-between">
+            <span class="text-on-surface">OCR Extraction & Correction</span>
+            <span class="font-telemetry-code text-[12px] text-secondary font-bold">GRANTED</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-surface-container-high/50 flex items-center justify-between">
+            <span class="text-on-surface">Permanent Record Sealing</span>
+            <span class="font-telemetry-code text-[12px] text-tertiary font-bold">OFFICER / ADMIN</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Security Credentials & Password Update (lg:col-span-8) -->
+    <div class="lg:col-span-8 flex flex-col gap-space-lg">
+      <!-- Change Password Card -->
+      <div class="p-space-lg rounded-2xl bg-surface-container-low/90 backdrop-blur-xl border border-surface-container-high/40 shadow-xl space-y-6">
+        <div class="flex items-center gap-space-sm pb-space-md border-b border-surface-container-high/40">
+          <div class="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary">
+            <span class="material-symbols-outlined text-[22px]">lock_reset</span>
+          </div>
+          <div>
+            <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Change Security Password</h3>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Update your salted PBKDF2 authentication credentials.</p>
+          </div>
+        </div>
+
+        <form id="changePasswordForm" class="space-y-4 font-body-sm text-body-sm max-w-xl">
+          <div>
+            <label class="block font-label-caps text-label-caps uppercase text-on-surface-variant mb-1" for="current_password">Current Password *</label>
+            <input id="current_password" name="current_password" required type="password" placeholder="Enter your current password"
+                   class="w-full bg-surface-container-lowest text-on-surface px-3 py-2.5 rounded-xl border border-surface-container-high focus:outline-none focus:border-secondary"/>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-label-caps text-label-caps uppercase text-on-surface-variant mb-1" for="new_password">New Password *</label>
+              <input id="new_password" name="new_password" required type="password" minlength="8" placeholder="Minimum 8 characters"
+                     class="w-full bg-surface-container-lowest text-on-surface px-3 py-2.5 rounded-xl border border-surface-container-high focus:outline-none focus:border-secondary"/>
+            </div>
+            <div>
+              <label class="block font-label-caps text-label-caps uppercase text-on-surface-variant mb-1" for="confirm_password">Confirm New Password *</label>
+              <input id="confirm_password" name="confirm_password" required type="password" minlength="8" placeholder="Re-enter new password"
+                     class="w-full bg-surface-container-lowest text-on-surface px-3 py-2.5 rounded-xl border border-surface-container-high focus:outline-none focus:border-secondary"/>
+            </div>
+          </div>
+
+          <div class="pt-2 flex items-center justify-end">
+            <button type="submit" class="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-container text-on-primary-container font-semibold hover:bg-opacity-90 shadow-[0_0_20px_rgba(160,120,255,0.4)] transition-all">
+              <span class="material-symbols-outlined text-[18px]">key</span>
+              <span>Update Password</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Security Policies & Compliance Notice -->
+      <div class="p-space-lg rounded-2xl bg-surface-container-low/70 backdrop-blur-md border border-surface-container-high/30 space-y-4">
+        <div class="flex items-center gap-2 text-tertiary">
+          <span class="material-symbols-outlined text-[20px]">policy</span>
+          <h4 class="font-body-md font-semibold text-on-surface">National Archives Security Standards</h4>
+        </div>
+        <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          In accordance with the Public Records Act and Digital Archival Preservation Standard ISO 14721 (OAIS), all operations performed under this identity—including neural inpainting, image super-resolution, and OCR metadata edits—are signed with your cryptographic employee token and appended to the immutable system audit log.
+        </p>
+        <div class="flex items-center gap-3 pt-1 flex-wrap font-telemetry-code text-[11px] text-outline">
+          <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> 200,000 PBKDF2 Iterations</span>
+          <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> SHA-256 Checksums</span>
+          <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Session Guard TLS 1.3</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Load profile details
+async function loadProfile() {
+  try {
+    const user = await API.get('/auth/me');
+    if (!user) return;
+
+    const name = user.name || user.full_name || 'Archival Operator';
+    const email = user.email || 'operator@archivegov.ai';
+    const empId = user.employee_id || 'GOV-ARC-001';
+    const dept = user.department_id || user.department || 'Central Government Archives';
+    const role = user.role || 'archive_officer';
+
+    document.getElementById('profileFullName').textContent = name;
+    document.getElementById('profileEmail').textContent = email;
+    document.getElementById('profileEmpId').textContent = empId;
+    document.getElementById('profileDepartment').textContent = dept;
+
+    const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    document.getElementById('profileAvatar').textContent = initials;
+
+    // Role badge
+    const roleBadge = document.getElementById('profileRoleBadge');
+    if (role === 'admin') {
+      roleBadge.textContent = 'Administrator';
+      roleBadge.className = 'px-3 py-1 rounded-full text-[12px] font-telemetry-code font-bold bg-error/15 text-error border border-error/30';
+    } else if (role === 'archive_officer') {
+      roleBadge.textContent = 'Archive Officer';
+      roleBadge.className = 'px-3 py-1 rounded-full text-[12px] font-telemetry-code font-bold bg-primary/15 text-primary border border-primary/30';
+    } else if (role === 'reviewer') {
+      roleBadge.textContent = 'Reviewer';
+      roleBadge.className = 'px-3 py-1 rounded-full text-[12px] font-telemetry-code font-bold bg-tertiary/15 text-tertiary border border-tertiary/30';
+    } else {
+      roleBadge.textContent = 'Data Operator';
+      roleBadge.className = 'px-3 py-1 rounded-full text-[12px] font-telemetry-code font-bold bg-secondary/15 text-secondary border border-secondary/30';
+    }
+
+  } catch (err) {
+    console.warn('Could not load user profile details:', err);
+  }
+}
+
+// Handle change password form submission
+document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const current = document.getElementById('current_password').value;
+  const newPass = document.getElementById('new_password').value;
+  const confirmPass = document.getElementById('confirm_password').value;
+
+  if (newPass !== confirmPass) {
+    Toast.error('New password and confirmation do not match.');
+    return;
+  }
+  if (newPass.length < 8) {
+    Toast.error('New password must be at least 8 characters long.');
+    return;
+  }
+
+  try {
+    const res = await API.post('/auth/change-password', {
+      current_password: current,
+      new_password: newPass
+    });
+    Toast.success(res.message || 'Password successfully updated.');
+    e.target.reset();
+  } catch (err) {
+    Toast.error(err.message || 'Failed to update password.');
+  }
+});
+
+document.addEventListener('DOMContentLoaded', loadProfile);
+</script>
+{% endblock %}
+

@@ -1,0 +1,45 @@
+<header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-2xl z-40 px-space-lg flex items-center justify-between border-b border-outline-variant/30 shadow-[0_1px_8px_rgba(0,0,0,0.35)]">
+  <!-- Left: Folio Breadcrumb & Global Search -->
+  <div class="flex items-center gap-space-md flex-1 max-w-2xl">
+    <div class="flex items-center gap-space-xs font-telemetry-code text-telemetry-code text-on-surface-variant shrink-0">
+      <span class="material-symbols-outlined text-[16px] text-tertiary">shield</span>
+      <span>GOV-NDR</span>
+      <span class="text-outline-variant">/</span>
+      <span class="text-secondary font-semibold">RESTORE-CORE</span>
+    </div>
+    <div class="relative flex-1">
+      <span class="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+      <input 
+        class="w-full bg-surface-container/90 text-on-surface placeholder:text-outline font-body-sm text-body-sm pl-10 pr-space-md py-2 rounded-lg border border-outline-variant/30 focus:border-secondary focus:ring-1 focus:ring-secondary/50 focus:outline-none transition-all shadow-inner" 
+        placeholder="Search documents by title, number, village, date... (Press Enter)" 
+        type="text"
+        id="globalSearchInput"
+      />
+    </div>
+  </div>
+
+  <!-- Right: Telemetry pill, Notification Bell, User Status -->
+  <div class="flex items-center gap-space-md shrink-0">
+    <div class="flex items-center gap-space-xs px-space-sm py-1.5 rounded-full bg-surface-container-high/90 border border-secondary/30 shadow-[0_0_12px_rgba(93,230,255,0.15)]">
+      <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+      <span class="font-telemetry-code text-telemetry-code text-secondary">AI Engine Online</span>
+    </div>
+
+    <!-- Notification Bell Button -->
+    <button class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" title="Notifications" type="button" id="headerNotifBtn">
+      <span class="material-symbols-outlined text-[22px]">notifications</span>
+      <span class="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-error text-on-error font-telemetry-code text-[10px] flex items-center justify-center font-bold" id="notif-badge">3</span>
+    </button>
+
+    <!-- Profile Pill -->
+    <a href="/app/profile" class="flex items-center gap-space-xs pl-space-xs py-1 px-2 rounded-lg hover:bg-surface-container-high transition-colors">
+      <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-md">
+        <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+      </div>
+      <span class="font-label-caps text-label-caps text-on-surface uppercase hidden xl:inline font-bold">
+        {{ user.role.replace('_', ' ').upper() if user else 'OFFICER ACTIVE' }}
+      </span>
+    </a>
+  </div>
+</header>
+

@@ -1,0 +1,471 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — ArchiveGov AI Sovereign Records Portal{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Starry & celestial architectural background with ambient glowing rotunda */
+  .bg-starry-dome {
+    background: radial-gradient(circle at 48% 42%, rgba(139, 92, 246, 0.16) 0%, rgba(11, 18, 48, 0.85) 55%, #070B1C 100%);
+  }
+
+  .shimmer-gold-text {
+    background: linear-gradient(135deg, #ffffff 25%, #ffdea6 60%, #efbf66 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .glass-auth-card {
+    background: rgba(14, 22, 52, 0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(139, 92, 246, 0.22);
+  }
+
+  .glass-auth-input {
+    background: rgba(7, 12, 32, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .glass-auth-input:focus {
+    background: rgba(9, 16, 42, 0.9);
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.22);
+  }
+
+  .dome-constellation-grid {
+    background-image: 
+      radial-gradient(rgba(239, 191, 102, 0.18) 1.2px, transparent 1.2px), 
+      radial-gradient(rgba(139, 92, 246, 0.14) 1px, transparent 1px);
+    background-size: 36px 36px;
+    background-position: 0 0, 18px 18px;
+  }
+</style>
+{% endblock %}
+
+{% block unauth_content %}
+<main class="min-h-screen w-full flex flex-col lg:flex-row relative">
+  <!-- ========================================== -->
+  <!-- LEFT SIDE: Architectural & Sovereign Brand  -->
+  <!-- ========================================== -->
+  <section class="relative lg:w-7/12 w-full min-h-[580px] lg:min-h-screen flex flex-col justify-between p-8 sm:p-12 lg:p-16 overflow-hidden border-b lg:border-b-0 lg:border-r border-indigo-950/70 bg-[#070B1C]" data-purpose="institutional-branding-panel">
+    <!-- Background Ambient Glow & Starry Grid Overlay -->
+    <div class="absolute inset-0 z-0 bg-starry-dome"></div>
+    <div class="absolute inset-0 z-0 dome-constellation-grid opacity-50"></div>
+    <div class="absolute top-1/4 left-1/3 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+    <!-- Architectural Dome, Capitol Rotunda & Neural Rays Graphic (Matching original design) -->
+    <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none opacity-45 mix-blend-screen scale-105 lg:scale-125 translate-y-12">
+      <svg class="w-full h-full max-w-3xl" fill="none" viewBox="0 0 900 700" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient cx="50%" cy="30%" id="celestialRays" r="65%">
+            <stop offset="0%" stop-color="#efbf66" stop-opacity="0.4"></stop>
+            <stop offset="35%" stop-color="#8B5CF6" stop-opacity="0.25"></stop>
+            <stop offset="70%" stop-color="#2fd9f4" stop-opacity="0.08"></stop>
+            <stop offset="100%" stop-color="#070B1C" stop-opacity="0"></stop>
+          </radialGradient>
+          <linearGradient id="domeGrad" x1="0%" x2="0%" y1="0%" y2="100%">
+            <stop offset="0%" stop-color="#efbf66" stop-opacity="0.9"></stop>
+            <stop offset="60%" stop-color="#8B5CF6" stop-opacity="0.5"></stop>
+            <stop offset="100%" stop-color="#0B1230" stop-opacity="0.8"></stop>
+          </linearGradient>
+          <linearGradient gradientUnits="userSpaceOnUse" id="beamLine" x1="450" x2="450" y1="90" y2="600">
+            <stop stop-color="#fbe0a1" stop-opacity="0.6"></stop>
+            <stop offset="0.5" stop-color="#8B5CF6" stop-opacity="0.3"></stop>
+            <stop offset="1" stop-color="#070B1C" stop-opacity="0"></stop>
+          </linearGradient>
+        </defs>
+        <!-- Radiant Beams Emanating from Dome Apex -->
+        <polygon fill="url(#beamLine)" opacity="0.35" points="450,110 260,650 640,650"></polygon>
+        <line opacity="0.4" stroke="#8B5CF6" stroke-dasharray="6 4" stroke-width="1.2" x1="450" x2="160" y1="110" y2="680"></line>
+        <line opacity="0.4" stroke="#8B5CF6" stroke-dasharray="6 4" stroke-width="1.2" x1="450" x2="740" y1="110" y2="680"></line>
+        <line opacity="0.5" stroke="#efbf66" stroke-width="1.5" x1="450" x2="450" y1="110" y2="680"></line>
+        <!-- Moon / Celestial Aureole behind rotunda -->
+        <circle cx="450" cy="220" fill="url(#celestialRays)" r="180"></circle>
+        <!-- Neural Network Data Nodes & Constellation Lines -->
+        <g opacity="0.45" stroke="#2fd9f4" stroke-width="0.8">
+          <line x1="310" x2="380" y1="210" y2="170"></line>
+          <line x1="380" x2="450" y1="170" y2="130"></line>
+          <line x1="450" x2="520" y1="130" y2="170"></line>
+          <line x1="520" x2="590" y1="170" y2="210"></line>
+          <line x1="380" x2="450" y1="170" y2="220"></line>
+          <line x1="520" x2="450" y1="170" y2="220"></line>
+        </g>
+        <circle cx="310" cy="210" fill="#2fd9f4" r="3.5"></circle>
+        <circle cx="380" cy="170" fill="#fbe0a1" r="4.5"></circle>
+        <circle cx="450" cy="130" fill="#efbf66" r="6"></circle>
+        <circle cx="520" cy="170" fill="#fbe0a1" r="4.5"></circle>
+        <circle cx="590" cy="210" fill="#2fd9f4" r="3.5"></circle>
+        <circle cx="450" cy="220" fill="#8B5CF6" r="4"></circle>
+        <!-- Rotunda Dome Outer Arc -->
+        <path d="M300 290 C310 185 380 135 450 135 C520 135 590 185 600 290 Z" fill="rgba(14, 22, 52, 0.45)" stroke="url(#domeGrad)" stroke-width="2.5"></path>
+        <!-- Lantern & Finial Statue -->
+        <rect fill="#efbf66" height="45" opacity="0.9" rx="3" width="12" x="444" y="90"></rect>
+        <circle cx="450" cy="80" fill="#fbe0a1" r="7"></circle>
+        <!-- Classical Architrave & Pediment -->
+        <polygon fill="rgba(20, 30, 70, 0.65)" points="270,310 630,310 450,265" stroke="#efbf66" stroke-width="2"></polygon>
+        <line stroke="#efbf66" stroke-width="3" x1="260" x2="640" y1="315" y2="315"></line>
+        <!-- Archival Pillars (Columns of History) -->
+        <g opacity="0.75" stroke="#fbe0a1" stroke-width="1.8">
+          <rect fill="rgba(11, 18, 48, 0.6)" height="240" rx="2" width="22" x="290" y="325"></rect>
+          <rect fill="rgba(11, 18, 48, 0.6)" height="240" rx="2" width="22" x="345" y="325"></rect>
+          <rect fill="rgba(11, 18, 48, 0.6)" height="240" rx="2" width="22" x="400" y="325"></rect>
+          <rect fill="rgba(11, 18, 48, 0.6)" height="240" rx="2" width="22" x="478" y="325"></rect>
+          <rect fill="rgba(11, 18, 48, 0.6)" height="240" rx="2" width="22" x="533" y="325"></rect>
+          <rect fill="rgba(11, 18, 48, 0.6)" height="240" rx="2" width="22" x="588" y="325"></rect>
+        </g>
+        <!-- Archival Base Steps -->
+        <line stroke="#efbf66" stroke-width="2.5" x1="240" x2="660" y1="565" y2="565"></line>
+        <line stroke="#8B5CF6" stroke-width="2" x1="210" x2="690" y1="585" y2="585"></line>
+        <line opacity="0.7" stroke="#2fd9f4" stroke-width="1.5" x1="180" x2="720" y1="605" y2="605"></line>
+      </svg>
+    </div>
+
+    <!-- Top Header: Institutional Emblem & Brand Logo -->
+    <div class="relative z-10 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3.5">
+        <a href="/" class="h-12 w-12 rounded-xl bg-gradient-to-br from-[#efbf66]/30 via-[#141E46] to-purple-900/40 border border-[#efbf66]/60 flex items-center justify-center shadow-[0_0_35px_-5px_rgba(239,191,102,0.3)] hover:scale-105 transition-transform">
+          <svg class="w-6 h-6 text-[#fbe0a1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+        </a>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-2xl font-headline-lg font-bold text-white tracking-tight">ArchiveGov AI</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-cyan-400/20 text-cyan-300 border border-cyan-400/30">AI-SYS v2.0</span>
+          </div>
+          <p class="text-xs text-slate-300 font-sans tracking-wide">Government Records Restorer</p>
+        </div>
+      </div>
+      <!-- Clearance Badge -->
+      <div class="hidden sm:flex items-center space-x-2 bg-[#0B1230]/90 border border-[#efbf66]/40 px-3.5 py-1.5 rounded-full backdrop-blur-md">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-[11px] font-mono uppercase tracking-wider text-[#fbe0a1] font-medium">RESTRICTED ACCESS • GOV-NDR</span>
+      </div>
+    </div>
+
+    <!-- Left Center Content: Prominent Text Block & Checklist -->
+    <div class="relative z-10 my-auto py-10 lg:py-16 max-w-xl">
+      <!-- Ornamental Gold Tag -->
+      <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-md bg-purple-900/40 border border-purple-500/30 text-purple-300 text-xs font-medium mb-6">
+        <svg class="w-3.5 h-3.5 text-[#efbf66]" fill="currentColor" viewBox="0 0 20 20">
+          <path clip-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" fill-rule="evenodd"></path>
+        </svg>
+        <span class="tracking-wide">National Archives AI Restoration Framework</span>
+      </div>
+      <!-- Prominent Headline -->
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-headline-lg font-bold text-white tracking-tight leading-[1.18] mb-5">
+        Secure Access for <span class="shimmer-gold-text italic block sm:inline">Government Archives</span>
+      </h1>
+      <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-8 max-w-lg">
+        Authorized ingress gateway for national conservators, state registrars, and historical deed curators. Reconstruct degraded records through sovereign neural pipelines.
+      </p>
+      <!-- Three Gold / Cyan Bullet Checks from Reference -->
+      <div class="space-y-4 pt-1">
+        <div class="flex items-center space-x-3.5">
+          <div class="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-slate-200">Role-based access control</span>
+        </div>
+        <div class="flex items-center space-x-3.5">
+          <div class="w-6 h-6 rounded-full bg-[#efbf66]/20 border border-[#efbf66]/60 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-[#fbe0a1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-slate-200">Secure & audited records</span>
+        </div>
+        <div class="flex items-center space-x-3.5">
+          <div class="w-6 h-6 rounded-full bg-cyan-500/20 border border-cyan-400/50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+            </svg>
+          </div>
+          <span class="text-sm font-medium text-slate-200">Restore and manage archives</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Institutional Metadata -->
+    <div class="relative z-10 border-t border-slate-800/80 pt-5 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
+      <div class="flex items-center space-x-2 font-mono text-[11px]">
+        <span class="w-2 h-2 rounded-full bg-[#2fd9f4]"></span>
+        <span>NODE: DC-US-EAST-09</span>
+        <span class="text-slate-600">•</span>
+        <span>FIPS 140-3 COMPLIANT</span>
+      </div>
+      <div class="text-[11px] text-slate-400">
+        Official System of Record • Government Archival Administration
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- RIGHT SIDE: Centered Elegant Auth Card     -->
+  <!-- ========================================== -->
+  <section class="lg:w-5/12 w-full flex items-center justify-center p-6 sm:p-10 lg:p-12 relative bg-[#070B1C]" data-purpose="user-authentication-panel">
+    <!-- Ambient Backdrops -->
+    <div class="absolute top-1/4 -right-10 w-72 h-72 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-1/4 -left-10 w-72 h-72 bg-cyan-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Main Glassmorphic Card Container -->
+    <div class="w-full max-w-md glass-auth-card rounded-2xl p-7 sm:p-9 relative z-10 shadow-[0_24px_60px_-12px_rgba(2,6,23,0.8),inset_0_1px_1px_0_rgba(255,255,255,0.1)]">
+      <!-- Pill Tab Toggle Bar -->
+      <div class="flex items-center bg-[#070D22] p-1.5 rounded-full border border-slate-800/90 mb-6" role="tablist">
+        <button aria-selected="true" class="flex-1 py-2 text-xs font-semibold rounded-full bg-gradient-to-r from-[#6D28D9] via-[#8B5CF6] to-indigo-600 text-white shadow-[0_0_30px_-4px_rgba(139,92,246,0.45)] transition-all duration-200 focus:outline-none" role="tab" type="button">
+          Login
+        </button>
+        <button onclick="Toast.info('Account self-registration is restricted. Contact your Archival Administrator.')" aria-selected="false" class="flex-1 py-2 text-xs font-semibold rounded-full text-slate-400 hover:text-slate-200 transition-colors focus:outline-none" role="tab" type="button">
+          Sign Up
+        </button>
+      </div>
+
+      <!-- Card Title & Subtitle -->
+      <div class="mb-5 text-center sm:text-left">
+        <h2 class="text-2xl sm:text-3xl font-headline-md font-bold text-white tracking-tight">Welcome Back</h2>
+        <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+          Sign in to access sovereign digital records & AI restoration pipelines.
+        </p>
+      </div>
+
+      <!-- Authentication Form -->
+      <form id="govLoginForm" class="space-y-4" method="POST">
+        <!-- Field: Email / Employee ID -->
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1.5" for="gov-identifier">
+            Email / Employee ID
+          </label>
+          <div class="relative rounded-xl shadow-sm">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7 7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+              </svg>
+            </div>
+            <input class="glass-auth-input block w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-white placeholder-slate-500 font-sans focus:outline-none" 
+                   id="gov-identifier" name="identifier" placeholder="admin@archivegov.ai" required type="text" value="admin@archivegov.ai"/>
+          </div>
+          <div class="flex justify-between items-center mt-1">
+            <span class="text-[10px] font-mono text-slate-500">Format: agency-email or PIV-ID</span>
+            <span class="text-[10px] font-mono text-emerald-400 flex items-center">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span> Verified Identity
+            </span>
+          </div>
+        </div>
+
+        <!-- Field: Password with Toggle -->
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1.5" for="gov-password">
+            Password
+          </label>
+          <div class="relative rounded-xl shadow-sm">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+              </svg>
+            </div>
+            <input class="glass-auth-input block w-full pl-10 pr-10 py-2.5 rounded-xl text-sm text-white placeholder-slate-500 font-sans focus:outline-none" 
+                   id="gov-password" name="password" placeholder="••••••••••••••••" required type="password" value="Admin@12345"/>
+            <!-- Visibility Toggle Button -->
+            <button aria-label="Toggle password visibility" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 focus:outline-none" id="toggle-password-btn" type="button">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+                <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Checkbox: Remember me + Forgot Password Link -->
+        <div class="flex items-center justify-between pt-1">
+          <div class="flex items-center">
+            <input checked class="h-4 w-4 rounded border-slate-700 bg-[#070B1C] text-[#8B5CF6] focus:ring-purple-500 cursor-pointer" id="remember-session" name="remember-session" type="checkbox"/>
+            <label class="ml-2 block text-xs text-slate-300 select-none cursor-pointer" for="remember-session">
+              Remember me
+            </label>
+          </div>
+          <a class="text-xs font-medium text-cyan-400 hover:text-cyan-300 hover:underline transition-colors" href="/forgot-password">
+            Forgot Password?
+          </a>
+        </div>
+
+        <!-- Primary Submit Button: Glowing Electric Purple Gradient -->
+        <div class="pt-2">
+          <button id="govLoginSubmitBtn" class="w-full py-3 px-5 rounded-xl bg-gradient-to-r from-[#6D28D9] via-[#8B5CF6] to-purple-600 hover:from-purple-600 hover:to-indigo-500 text-white font-semibold text-sm flex items-center justify-center space-x-2 shadow-[0_0_30px_-4px_rgba(139,92,246,0.45)] hover:shadow-purple-500/60 transition-all duration-200 group focus:outline-none" type="submit">
+            <span>Sign In</span>
+            <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Divider: 'or continue with' -->
+        <div class="relative my-4">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-800"></div>
+          </div>
+          <div class="relative flex justify-center text-xs">
+            <span class="bg-[#0e163b] px-3 text-slate-400 text-[11px] rounded-full">
+              or continue with
+            </span>
+          </div>
+        </div>
+
+        <!-- Secondary Button: Government SSO with Emblem -->
+        <button id="govSsoBtn" class="w-full py-2.5 px-4 rounded-xl bg-[#090F28] hover:bg-[#111A42] border border-slate-700/80 hover:border-[#efbf66]/50 text-slate-200 text-xs font-medium flex items-center justify-center space-x-3 transition-all duration-150 shadow-sm focus:outline-none" type="button">
+          <svg class="w-4 h-4 text-[#efbf66] flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L9.5 5.5H5.5L6.5 9.5L3 12L6.5 14.5L5.5 18.5H9.5L12 22L14.5 18.5H18.5L17.5 14.5L21 12L17.5 9.5L18.5 5.5H14.5L12 2ZM12 6C15.31 6 18 8.69 18 12C18 15.31 15.31 18 12 18C8.69 18 6 15.31 6 12C6 8.69 8.69 6 12 6ZM12 8C9.79 8 8 9.79 8 12C8 14.21 9.79 16 12 16C14.21 16 16 14.21 16 12C16 9.79 14.21 8 12 8Z"></path>
+          </svg>
+          <span>Authenticate with Government SSO / PIV-CAC</span>
+        </button>
+
+        <!-- ======================================================== -->
+        <!-- DEMO CREDENTIALS STRIP (Seamlessly integrated into UX)    -->
+        <!-- ======================================================== -->
+        <div class="mt-4 pt-4 border-t border-slate-800/80">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+              Demo Credentials
+            </span>
+            <span class="text-[10px] font-mono text-[#efbf66]">Click to Auto-Fill</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <!-- 1. Administrator -->
+            <button type="button" class="demo-cred-btn group p-2 rounded-xl bg-[#070D22]/90 hover:bg-purple-950/40 border border-slate-800/90 hover:border-purple-500/40 text-left transition-all"
+                    data-user="admin@archivegov.ai" data-pass="Admin@12345">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-white group-hover:text-purple-300 transition-colors">Administrator</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400 block truncate mt-0.5">admin@archivegov.ai</span>
+            </button>
+
+            <!-- 2. Archive Officer -->
+            <button type="button" class="demo-cred-btn group p-2 rounded-xl bg-[#070D22]/90 hover:bg-cyan-950/40 border border-slate-800/90 hover:border-cyan-500/40 text-left transition-all"
+                    data-user="officer@archivegov.ai" data-pass="Officer@12345">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-white group-hover:text-cyan-300 transition-colors">Archive Officer</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400 block truncate mt-0.5">officer@archivegov.ai</span>
+            </button>
+
+            <!-- 3. Reviewer -->
+            <button type="button" class="demo-cred-btn group p-2 rounded-xl bg-[#070D22]/90 hover:bg-amber-950/40 border border-slate-800/90 hover:border-amber-500/40 text-left transition-all"
+                    data-user="reviewer@archivegov.ai" data-pass="Reviewer@12345">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-white group-hover:text-amber-300 transition-colors">Reviewer</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400 block truncate mt-0.5">reviewer@archivegov.ai</span>
+            </button>
+
+            <!-- 4. Data Operator -->
+            <button type="button" class="demo-cred-btn group p-2 rounded-xl bg-[#070D22]/90 hover:bg-emerald-950/40 border border-slate-800/90 hover:border-emerald-500/40 text-left transition-all"
+                    data-user="operator@archivegov.ai" data-pass="Operator@12345">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-white group-hover:text-emerald-300 transition-colors">Data Operator</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400 block truncate mt-0.5">operator@archivegov.ai</span>
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Legal / Security Warning Notice Banner -->
+      <div class="mt-5 pt-4 border-t border-slate-800/80">
+        <div class="flex items-start space-x-2.5 text-[11px] text-slate-400 leading-normal">
+          <svg class="w-4 h-4 text-amber-400/90 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+          </svg>
+          <p>
+            Unauthorized access to sovereign records is prohibited under Federal Archival Act 
+            <span class="font-mono text-slate-300 font-medium">44 U.S.C. § 3101</span>. All transactions are logged and non-repudiable.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script data-purpose="form-interactivity">
+document.addEventListener('DOMContentLoaded', () => {
+  const toggleBtn = document.getElementById('toggle-password-btn');
+  const passwordInput = document.getElementById('gov-password');
+  const identifierInput = document.getElementById('gov-identifier');
+  const loginForm = document.getElementById('govLoginForm');
+  const submitBtn = document.getElementById('govLoginSubmitBtn');
+
+  // Password visibility toggle
+  if (toggleBtn && passwordInput) {
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = passwordInput.getAttribute('type') === 'password';
+      passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+      toggleBtn.classList.toggle('text-purple-400', isPassword);
+      toggleBtn.classList.toggle('text-slate-400', !isPassword);
+    });
+  }
+
+  // Demo credential pill click auto-fills
+  document.querySelectorAll('.demo-cred-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const u = btn.getAttribute('data-user');
+      const p = btn.getAttribute('data-pass');
+      identifierInput.value = u;
+      passwordInput.value = p;
+
+      // Visual flash feedback
+      identifierInput.classList.add('border-purple-400');
+      passwordInput.classList.add('border-purple-400');
+      setTimeout(() => {
+        identifierInput.classList.remove('border-purple-400');
+        passwordInput.classList.remove('border-purple-400');
+      }, 500);
+
+      Toast.info(`Filled credentials for ${u}`);
+    });
+  });
+
+  // Government SSO button 1-click test
+  document.getElementById('govSsoBtn')?.addEventListener('click', () => {
+    identifierInput.value = 'officer@archivegov.ai';
+    passwordInput.value = 'Officer@12345';
+    loginForm.requestSubmit();
+  });
+
+  // Login form submission handler
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ident = identifierInput.value.trim();
+    const pass = passwordInput.value;
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+      <span class="material-symbols-outlined text-[18px] animate-spin">sync</span>
+      <span>Authenticating Clearance...</span>
+    `;
+
+    try {
+      await Auth.login(ident, pass);
+    } catch (err) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `
+        <span>Sign In</span>
+        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      `;
+    }
+  });
+});
+</script>
+{% endblock %}

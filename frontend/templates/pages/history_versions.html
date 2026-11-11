@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}History & Versions — ArchiveGov AI{% endblock %}
+
+{% block content %}
+<div class="relative w-full px-space-lg py-space-md flex flex-col gap-space-lg">
+  <!-- Glowing Background Accents -->
+  <div class="pointer-events-none absolute -top-10 left-1/4 w-96 h-96 bg-primary-container/15 rounded-full blur-3xl -z-10"></div>
+  <div class="pointer-events-none absolute top-64 right-10 w-96 h-96 bg-secondary/10 rounded-full blur-3xl -z-10"></div>
+
+  <!-- Header & Top Bar -->
+  <div class="bg-surface-container-low/85 backdrop-blur-xl border border-outline-variant/30 p-space-md rounded-2xl shadow-xl flex flex-col lg:flex-row lg:items-center lg:justify-between gap-space-md">
+    <div class="flex flex-col gap-1">
+      <div class="flex items-center gap-space-xs font-mono text-xs text-on-surface-variant flex-wrap mb-1">
+        <a href="/app/archive" class="text-secondary hover:underline">Digital Archive</a>
+        <span class="text-outline-variant">/</span>
+        <span class="text-tertiary">{{ document.document_id if document else 'DOC-1912-KDL' }}</span>
+        <span class="text-outline-variant">/</span>
+        <span class="text-on-surface font-semibold">History & Versions</span>
+      </div>
+      <h1 class="font-headline-md text-2xl font-bold text-on-surface tracking-tight">History & Versions</h1>
+      <p class="font-body-sm text-xs text-on-surface-variant">Track document changes, AI restoration stages, and comparative lineage.</p>
+    </div>
+
+    <!-- Action Buttons Cluster -->
+    <div class="flex items-center gap-space-sm shrink-0 flex-wrap">
+      <button class="flex items-center gap-space-xs px-space-md py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 text-on-surface text-xs font-mono font-medium shadow-sm transition-all" id="btnCompare">
+        <span class="material-symbols-outlined text-[16px] text-primary">difference</span>
+        <span>Compare Selected Versions</span>
+      </button>
+      <a href="/api/v1/files/{{ document.restored_file_key or document.original_file_key }}" download class="flex items-center gap-space-xs px-space-md py-2 rounded-xl bg-gradient-to-r from-primary-container to-inverse-primary hover:brightness-110 text-white text-xs font-mono font-semibold shadow-lg transition-all">
+        <span class="material-symbols-outlined text-[16px]">download</span>
+        <span>Download Current Master</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Main 2-Column Content -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+    <!-- LEFT: Version Timeline (6 cols) -->
+    <div class="lg:col-span-6 flex flex-col gap-space-md">
+      <div class="bg-surface-container-low/90 backdrop-blur-2xl rounded-2xl p-space-lg border border-outline-variant/30 shadow-2xl flex flex-col gap-space-md">
+        <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-xs">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[22px]">history_toggle_off</span>
+            <h2 class="font-headline-sm text-sm text-white font-bold">Document Revisions Lineage</h2>
+          </div>
+          <span class="font-mono text-[11px] text-secondary bg-secondary/10 border border-secondary/20 px-2.5 py-0.5 rounded-full font-semibold" id="versionCountBadge">
+            3 Versions Available
+          </span>
+        </div>
+
+        <!-- Vertical Timeline Track with Glowing Nodes -->
+        <div class="relative pl-8 space-y-4 before:absolute before:left-3.5 before:top-4 before:bottom-4 before:w-0.5 before:bg-gradient-to-b before:from-secondary before:via-primary before:to-outline-variant/40" id="versionTimelineList">
+          <!-- Timeline items injected dynamically via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Version Preview & Comparison Inspector (6 cols) -->
+    <div class="lg:col-span-6 flex flex-col gap-space-md">
+      <div class="bg-surface-container-low/90 backdrop-blur-2xl rounded-2xl p-space-lg border border-outline-variant/30 shadow-2xl flex flex-col gap-space-md">
+        <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-xs">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-secondary text-[20px]">preview</span>
+            <h3 class="font-headline-sm text-sm text-white font-bold" id="previewVersionTitle">Version Inspection</h3>
+          </div>
+          <span class="font-mono text-xs text-tertiary" id="previewVersionNum">v2.0</span>
+        </div>
+
+        <div class="relative w-full aspect-[4/5] bg-slate-950 rounded-xl overflow-hidden flex items-center justify-center border border-outline-variant/20 shadow-inner">
+          <img id="versionPreviewImg" src="/api/v1/files/{{ document.restored_file_key or document.original_file_key }}" alt="Version Preview" class="w-full h-full object-cover object-center"/>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-surface-container-lowest border border-outline-variant/30 flex flex-col gap-2 text-xs font-sans">
+          <div class="flex justify-between font-mono">
+            <span class="text-slate-400">Processing Engine:</span>
+            <span class="text-white font-semibold" id="previewModel">Real-ESRGAN + LaMa + PaddleOCR</span>
+          </div>
+          <p class="text-slate-300 leading-relaxed" id="previewNotes">
+            Master restored version. Certified neural enhancement with reconstructed paper voids and isolated synthetic regions.
+          </p>
+        </div>
+
+        <button id="btnRollback" class="w-full py-2.5 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/40 text-on-surface font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all">
+          <span class="material-symbols-outlined text-[16px]">restore</span>
+          <span>Revert to this Historical Version</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const docId = "{{ document.document_id if document else 'DOC-1912-KDL' }}";
+  let versions = [];
+  let selectedVersion = null;
+
+  async function loadVersions() {
+    try {
+      const data = await API.get(`/api/v1/versions/${docId}`);
+      versions = data.versions;
+      document.getElementById('versionCountBadge').textContent = `${versions.length} Versions Recorded`;
+      renderTimeline(versions);
+      if (versions.length > 0) {
+        selectVersion(versions[versions.length - 1]);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function renderTimeline(verList) {
+    const container = document.getElementById('versionTimelineList');
+    // Reverse to show latest first
+    const reversed = [...verList].reverse();
+
+    container.innerHTML = reversed.map((v, i) => {
+      const isCurrent = i === 0;
+      return `
+        <div class="relative bg-surface-container/90 rounded-xl p-4 border ${isCurrent ? 'border-primary/50 shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_16px_rgba(160,120,255,0.18)]' : 'border-outline-variant/30'} cursor-pointer hover:bg-surface-container-high transition-all" onclick="selectVersionById('${v.version_id}')">
+          <!-- Glowing Node -->
+          <div class="absolute -left-8 top-5 -translate-x-1/2 w-4 h-4 rounded-full ${isCurrent ? 'bg-secondary ring-4 ring-surface-container-lowest' : 'bg-outline ring-2 ring-surface-container-lowest'} shadow-md"></div>
+          
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2">
+              <span class="font-headline-sm text-sm text-white font-bold">${v.version_number} – ${v.version_type.toUpperCase()}</span>
+              ${isCurrent ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[10px] font-bold">Current Master</span>' : ''}
+            </div>
+            <span class="font-mono text-[11px] text-tertiary">${v.created_at[:10]}</span>
+          </div>
+          <p class="text-xs text-slate-300 mt-1">${v.model_used}</p>
+          <span class="text-[11px] text-slate-400 mt-0.5 block italic">${v.notes || ''}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.selectVersionById = function(verId) {
+    const v = versions.find(item => item.version_id === verId);
+    if (v) selectVersion(v);
+  };
+
+  function selectVersion(v) {
+    selectedVersion = v;
+    document.getElementById('previewVersionTitle').textContent = `Version Inspection // ${v.version_id}`;
+    document.getElementById('previewVersionNum').textContent = v.version_number;
+    document.getElementById('versionPreviewImg').src = `/api/v1/files/${v.file_key}`;
+    document.getElementById('previewModel').textContent = v.model_used;
+    document.getElementById('previewNotes').textContent = v.notes || 'Archival recorded milestone.';
+  }
+
+  // Rollback button
+  document.getElementById('btnRollback').addEventListener('click', async () => {
+    if (!selectedVersion) return;
+    if (confirm(`Confirm rollback to ${selectedVersion.version_number}? Current restored master will be updated.`)) {
+      try {
+        const res = await API.post(`/api/v1/versions/${docId}/restore/${selectedVersion.version_id}`, {});
+        Toast.success(res.message, 'Rollback Completed');
+        setTimeout(() => window.location.reload(), 1200);
+      } catch (err) {
+        Toast.error(err.message);
+      }
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', loadVersions);
+</script>
+{% endblock %}
+

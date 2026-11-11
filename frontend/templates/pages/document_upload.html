@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Government Records — ArchiveGov AI{% endblock %}
+
+{% block content %}
+<div class="relative w-full overflow-hidden px-space-lg py-space-md flex flex-col gap-space-lg">
+  <!-- Atmospheric Glow Backdrop -->
+  <div class="pointer-events-none absolute -top-24 left-1/4 w-96 h-96 bg-primary-container/15 rounded-full blur-3xl -z-10"></div>
+  <div class="pointer-events-none absolute top-1/2 right-12 w-80 h-80 bg-secondary/10 rounded-full blur-3xl -z-10"></div>
+
+  <!-- Page Header -->
+  <div class="flex flex-wrap items-end justify-between gap-space-md pb-space-sm border-b border-outline-variant/30">
+    <div class="flex flex-col">
+      <div class="flex items-center gap-space-xs font-telemetry-code text-telemetry-code text-tertiary mb-1">
+        <span class="material-symbols-outlined text-[16px]">verified_user</span>
+        <span>SOVEREIGN VAULT SECURE UPLOAD</span>
+        <span class="text-outline-variant">•</span>
+        <span class="text-secondary font-semibold">TERMINAL NDR-4</span>
+      </div>
+      <h1 class="font-headline-lg text-3xl sm:text-4xl font-bold text-on-surface tracking-tight">Upload Government Records</h1>
+      <p class="font-body-md text-body-md text-on-surface-variant mt-0.5">
+        Add historical documents for multi-spectral AI restoration, structural repair, and certified preservation.
+      </p>
+    </div>
+    <div class="flex items-center gap-space-sm bg-surface-container-low/90 backdrop-blur-md px-space-md py-space-xs rounded-xl border border-outline-variant/30 shadow-md">
+      <div class="flex flex-col text-right">
+        <span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Pipeline Capacity</span>
+        <span class="font-telemetry-code text-telemetry-code text-secondary font-semibold">12 Core Neural Nodes Idle</span>
+      </div>
+      <div class="h-8 w-px bg-surface-variant mx-space-xs"></div>
+      <div class="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse"></div>
+    </div>
+  </div>
+
+  <!-- Main Workspace Grid: Left Dropzone + Right Metadata Form -->
+  <form id="uploadForm" class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+    <!-- LEFT: Ingestion Modes & Drag-and-Drop Vault (7 cols) -->
+    <div class="xl:col-span-7 flex flex-col gap-space-lg min-w-0">
+      <!-- Upload Mode Selector Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-space-sm">
+        <button type="button" class="mode-tab active relative group p-space-md rounded-xl bg-surface-container text-left transition-all border border-primary/40 shadow-sm" data-mode="single">
+          <div class="flex items-center justify-between mb-space-xs">
+            <span class="material-symbols-outlined text-primary text-[24px]">description</span>
+            <span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(208,188,255,0.8)]"></span>
+          </div>
+          <span class="block font-headline-sm text-sm text-on-surface font-semibold truncate">Single File</span>
+          <span class="block font-body-sm text-xs text-on-surface-variant line-clamp-1">Hi-res scan</span>
+        </button>
+
+        <button type="button" class="mode-tab group p-space-md rounded-xl bg-surface-container-low/80 hover:bg-surface-container text-left transition-all border border-outline-variant/30" data-mode="batch">
+          <div class="flex items-center justify-between mb-space-xs">
+            <span class="material-symbols-outlined text-secondary text-[24px]">folder_zip</span>
+            <span class="font-mono text-[10px] text-on-surface-variant">MULTI</span>
+          </div>
+          <span class="block font-headline-sm text-sm text-on-surface font-semibold truncate">Batch Upload</span>
+          <span class="block font-body-sm text-xs text-on-surface-variant line-clamp-1">Multi-page PDF</span>
+        </button>
+
+        <button type="button" class="mode-tab group p-space-md rounded-xl bg-surface-container-low/80 hover:bg-surface-container text-left transition-all border border-outline-variant/30" data-mode="scanner">
+          <div class="flex items-center justify-between mb-space-xs">
+            <span class="material-symbols-outlined text-tertiary text-[24px]">scanner</span>
+            <span class="font-mono text-[10px] text-tertiary">LIVE</span>
+          </div>
+          <span class="block font-headline-sm text-sm text-on-surface font-semibold truncate">Scan Archive</span>
+          <span class="block font-body-sm text-xs text-on-surface-variant line-clamp-1">Twain interface</span>
+        </button>
+
+        <button type="button" class="mode-tab group p-space-md rounded-xl bg-surface-container-low/80 hover:bg-surface-container text-left transition-all border border-outline-variant/30" data-mode="sync">
+          <div class="flex items-center justify-between mb-space-xs">
+            <span class="material-symbols-outlined text-primary-fixed-dim text-[24px]">sync_alt</span>
+            <span class="font-mono text-[10px] text-outline">ODBC</span>
+          </div>
+          <span class="block font-headline-sm text-sm text-on-surface font-semibold truncate">Sync Records</span>
+          <span class="block font-body-sm text-xs text-on-surface-variant line-clamp-1">Legacy DB</span>
+        </button>
+      </div>
+
+      <!-- Primary Drop Zone -->
+      <div 
+        id="dropzone"
+        class="relative group rounded-2xl p-space-xl bg-surface-container-lowest/90 border-2 border-dashed border-outline-variant hover:border-secondary/70 backdrop-blur-xl transition-all duration-300 shadow-2xl flex flex-col items-center justify-center text-center cursor-pointer min-h-[320px]"
+      >
+        <input type="file" id="fileInput" name="file" class="hidden" accept=".jpg,.jpeg,.png,.webp,.tif,.tiff,.pdf"/>
+        
+        <div class="w-16 h-16 rounded-2xl bg-surface-container-high/80 border border-outline-variant/40 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(34,211,238,0.2)] mb-4">
+          <span class="material-symbols-outlined text-[36px]">cloud_upload</span>
+        </div>
+
+        <h3 class="font-headline-sm text-lg font-bold text-white" id="dropzoneTitle">
+          Drag & Drop Document Scans Here
+        </h3>
+        <p class="font-body-sm text-sm text-on-surface-variant max-w-md mt-1" id="dropzoneSubtitle">
+          Drop TIFF, PNG, JPG, or PDF files. Maximum size: 50 MB per file.
+        </p>
+
+        <button type="button" id="browseBtn" class="mt-5 px-5 py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest border border-secondary/30 text-secondary font-medium text-xs font-mono uppercase tracking-wider transition-all">
+          Browse File Explorer
+        </button>
+
+        <!-- Selected File Status Badge -->
+        <div id="fileSelectedPill" class="hidden mt-4 items-center gap-2 px-4 py-2 rounded-xl bg-surface-container border border-secondary/50 text-secondary text-xs font-mono">
+          <span class="material-symbols-outlined text-[18px]">draft</span>
+          <span id="fileNameDisplay" class="font-semibold">document.png</span>
+          <span id="fileSizeDisplay" class="text-slate-400">• 2.4 MB</span>
+          <button type="button" id="removeFileBtn" class="text-error hover:text-red-300 ml-2">
+            <span class="material-symbols-outlined text-[16px]">cancel</span>
+          </button>
+        </div>
+
+        <!-- Upload Progress Bar -->
+        <div id="uploadProgressContainer" class="hidden w-full max-w-md mt-6">
+          <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+            <span>Transferring to Sovereign Vault...</span>
+            <span id="uploadProgressPct">0%</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
+            <div id="uploadProgressBar" class="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-200" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Institutional Metadata Registry Form (5 cols) -->
+    <div class="xl:col-span-5 bg-surface-container-low/90 rounded-2xl border border-outline-variant/30 p-space-lg shadow-2xl flex flex-col gap-space-md">
+      <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-sm">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[22px]">assignment</span>
+          <h2 class="font-headline-sm text-base text-on-surface font-bold">Archival Metadata Entry</h2>
+        </div>
+        <span class="px-2 py-0.5 rounded bg-primary/20 text-primary font-mono text-[10px] uppercase font-bold">Required</span>
+      </div>
+
+      <div class="space-y-4 text-xs font-sans">
+        <!-- Title -->
+        <div>
+          <label class="block font-mono uppercase text-slate-300 mb-1">Document Title *</label>
+          <input 
+            type="text" 
+            id="docTitle" 
+            name="title" 
+            required 
+            placeholder="e.g. 1912 Land Settlement Deed — Kuddalur Revenue District"
+            class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-secondary focus:ring-1 focus:ring-secondary text-white text-xs px-3.5 py-2.5 rounded-xl transition-all"
+          />
+        </div>
+
+        <!-- Department & Category -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-mono uppercase text-slate-300 mb-1">Department</label>
+            <select id="docDept" name="department_id" class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-secondary text-white text-xs px-3 py-2.5 rounded-xl">
+              <option value="Land Revenue & Settlement">Land Revenue & Settlement</option>
+              <option value="Judicial Archives & High Court">Judicial Archives & High Court</option>
+              <option value="Colonial Gazette Registry">Colonial Gazette Registry</option>
+              <option value="Census & Municipal Archives">Census & Municipal Archives</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-mono uppercase text-slate-300 mb-1">Category</label>
+            <select id="docCat" name="category" class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-secondary text-white text-xs px-3 py-2.5 rounded-xl">
+              <option value="Historical Land Records">Historical Land Records</option>
+              <option value="Revenue Records">Revenue Records</option>
+              <option value="Historical Court Records">Historical Court Records</option>
+              <option value="Government Certificates">Government Certificates</option>
+              <option value="Archival Registers">Archival Registers</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Date & Language -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-mono uppercase text-slate-300 mb-1">Original Document Year</label>
+            <input type="text" id="docDate" name="original_date" value="1912" placeholder="e.g. 1912" class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-secondary text-white text-xs px-3 py-2.5 rounded-xl"/>
+          </div>
+          <div>
+            <label class="block font-mono uppercase text-slate-300 mb-1">Document Language</label>
+            <input type="text" id="docLang" name="language" value="English & Tamil Vernacular" placeholder="e.g. English & Bengali" class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-secondary text-white text-xs px-3 py-2.5 rounded-xl"/>
+          </div>
+        </div>
+
+        <!-- Reference ID -->
+        <div>
+          <label class="block font-mono uppercase text-slate-300 mb-1">Archive Reference ID</label>
+          <input type="text" id="docRefId" name="archive_reference_id" placeholder="e.g. REC-1912-KDL-V09 (Auto-assigned if blank)" class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-secondary text-white text-xs px-3 py-2.5 rounded-xl font-mono"/>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block font-mono uppercase text-slate-300 mb-1">Historical Notes / Description</label>
+          <textarea id="docDesc" name="description" rows="3" placeholder="Condition notes: water stain on center folio, torn left margin, faded iron gall calligraphy..." class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-secondary text-white text-xs p-3 rounded-xl resize-none"></textarea>
+        </div>
+
+        <button 
+          type="submit" 
+          id="submitUploadBtn"
+          class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-primary-container via-primary-container to-inverse-primary hover:brightness-110 text-white font-semibold text-xs font-mono uppercase tracking-wider shadow-[0_0_24px_rgba(160,120,255,0.45)] transition-all flex items-center justify-center gap-2 group mt-2"
+        >
+          <span class="material-symbols-outlined text-[18px]">verified</span>
+          <span>Register Document & Launch AI Studio</span>
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const browseBtn = document.getElementById('browseBtn');
+  const filePill = document.getElementById('fileSelectedPill');
+  const fileNameDisp = document.getElementById('fileNameDisplay');
+  const fileSizeDisp = document.getElementById('fileSizeDisplay');
+  const removeBtn = document.getElementById('removeFileBtn');
+  const form = document.getElementById('uploadForm');
+
+  browseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.click();
+  });
+
+  dropzone.addEventListener('click', () => fileInput.click());
+
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('border-secondary', 'bg-surface-container-high/60');
+  });
+
+  dropzone.addEventListener('dragleave', () => {
+    dropzone.classList.remove('border-secondary', 'bg-surface-container-high/60');
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('border-secondary', 'bg-surface-container-high/60');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      fileInput.files = e.dataTransfer.files;
+      handleFileSelected(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files[0]) {
+      handleFileSelected(fileInput.files[0]);
+    }
+  });
+
+  function handleFileSelected(file) {
+    fileNameDisp.textContent = file.name;
+    const mb = (file.size / (1024 * 1024)).toFixed(2);
+    fileSizeDisp.textContent = `• ${mb} MB`;
+    filePill.classList.remove('hidden');
+    filePill.classList.add('flex');
+
+    // Auto-fill title if empty
+    const titleField = document.getElementById('docTitle');
+    if (!titleField.value) {
+      titleField.value = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+    }
+  }
+
+  removeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.value = '';
+    filePill.classList.add('hidden');
+    filePill.classList.remove('flex');
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!fileInput.files || !fileInput.files[0]) {
+      Toast.warning('Please select an archival file scan first.');
+      return;
+    }
+
+    const btn = document.getElementById('submitUploadBtn');
+    const pContainer = document.getElementById('uploadProgressContainer');
+    const pBar = document.getElementById('uploadProgressBar');
+    const pPct = document.getElementById('uploadProgressPct');
+
+    btn.disabled = true;
+    pContainer.classList.remove('hidden');
+
+    // Animate progress simulation for UX
+    let p = 15;
+    pBar.style.width = '15%';
+    pPct.textContent = '15%';
+
+    const formData = new FormData(form);
+
+    try {
+      p = 50;
+      pBar.style.width = '50%';
+      pPct.textContent = '50%';
+
+      const res = await API.post('/api/v1/documents/upload', formData);
+      pBar.style.width = '100%';
+      pPct.textContent = '100%';
+
+      Toast.success(res.message, 'Ingestion Verified');
+      setTimeout(() => {
+        window.location.href = res.redirect_url;
+      }, 700);
+    } catch (err) {
+      pContainer.classList.add('hidden');
+      btn.disabled = false;
+      Toast.error(err.message, 'Upload Blocked');
+    }
+  });
+</script>
+{% endblock %}
+

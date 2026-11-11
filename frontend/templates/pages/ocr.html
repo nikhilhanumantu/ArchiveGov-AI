@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}OCR & Text Extraction — ArchiveGov AI{% endblock %}
+
+{% block content %}
+<div class="p-space-lg flex flex-col gap-space-md">
+  <!-- Top Document Intelligence Status Banner -->
+  <div class="bg-surface-container-low/90 backdrop-blur-xl rounded-2xl p-space-md border border-outline-variant/30 shadow-xl flex flex-wrap items-center justify-between gap-space-md">
+    <div class="flex flex-wrap items-center gap-space-md min-w-0">
+      <div class="flex items-center gap-space-sm">
+        <div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center shrink-0 shadow-inner">
+          <span class="material-symbols-outlined text-secondary text-[24px]">document_scanner</span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <div class="flex items-center gap-space-xs flex-wrap">
+            {% if all_documents %}
+            <select 
+              id="ocrDocSelector" 
+              onchange="window.location.href='/app/ocr?document_id=' + this.value"
+              class="bg-surface-container-high text-xs text-on-surface font-mono rounded px-2 py-0.5 border border-secondary/40 focus:border-secondary outline-none shadow-sm cursor-pointer hover:bg-surface-container-highest transition-colors"
+            >
+              {% for d in all_documents %}
+                <option value="{{ d.document_id }}" {% if document and d.document_id == document.document_id %}selected{% endif %}>
+                  {{ d.document_id }} — {{ d.title[:30] }}
+                </option>
+              {% endfor %}
+            </select>
+            {% else %}
+            <span class="font-telemetry-code text-telemetry-code text-secondary font-semibold">#{{ document.document_id if document else 'DOC-1912-KDL' }}</span>
+            {% endif %}
+            <span class="text-outline-variant font-telemetry-code text-body-sm">•</span>
+            <span class="font-headline-sm text-sm text-on-surface truncate font-semibold">{{ document.title if document else '1912 Land Settlement Record' }}</span>
+            <span class="bg-surface-container-highest px-space-xs py-0.5 rounded font-label-caps text-label-caps text-tertiary uppercase">Sovereign Record</span>
+          </div>
+          <p class="font-body-sm text-xs text-on-surface-variant truncate">District Collectorate Archive • Madras Presidency Ledger Vol. IX</p>
+        </div>
+      </div>
+
+      <div class="h-8 w-px bg-surface-variant hidden lg:block"></div>
+
+      <div class="flex items-center gap-space-lg text-on-surface-variant">
+        <div class="flex flex-col">
+          <span class="font-label-caps text-[10px] uppercase text-outline">Detected Scripts</span>
+          <span class="font-mono text-xs text-on-surface font-medium">{{ document.language if document else 'English & Tamil Vernacular' }}</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-label-caps text-[10px] uppercase text-outline">Active Vision Pipeline</span>
+          <div class="flex items-center gap-space-xs">
+            <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+            <span class="font-mono text-xs text-secondary">PaddleOCR Multilingual Dual-stream</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Action Controls -->
+    <div class="flex items-center gap-space-sm shrink-0">
+      <button class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface text-xs font-mono" id="btnRescanOcr">
+        <span class="material-symbols-outlined text-[16px]">sync</span>
+        <span>Re-scan Raster</span>
+      </button>
+      <button class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-container text-on-primary-container hover:brightness-110 font-mono text-xs font-bold shadow-lg" id="btnSaveOcr">
+        <span class="material-symbols-outlined text-[16px]">save</span>
+        <span>Save Verified Text</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main 12-Column Split Workspace -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-start">
+    <!-- LEFT: Canvas with Text Bounding Boxes (5 cols) -->
+    <div class="lg:col-span-5 flex flex-col bg-surface-container-low/95 rounded-2xl border border-outline-variant/30 shadow-xl overflow-hidden">
+      <div class="p-3 bg-surface-container flex items-center justify-between border-b border-outline-variant/30 text-xs font-mono">
+        <span class="text-outline uppercase tracking-wider">Raster Layer: 1200 DPI Restored</span>
+        <div class="flex items-center gap-1.5">
+          <button class="p-1.5 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors" id="zoomOutBtn" title="Zoom Out">
+            <span class="material-symbols-outlined text-[16px]">remove</span>
+          </button>
+          <span class="font-mono text-[11px] text-on-surface px-1.5" id="zoomLevelDisplay">100%</span>
+          <button class="p-1.5 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors" id="zoomInBtn" title="Zoom In">
+            <span class="material-symbols-outlined text-[16px]">add</span>
+          </button>
+          <button class="p-1.5 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors" id="resetFitBtn" title="Fit to Canvas">
+            <span class="material-symbols-outlined text-[16px]">fit_screen</span>
+          </button>
+          <button class="p-1.5 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors" id="rotateBtn" title="Rotate 90°">
+            <span class="material-symbols-outlined text-[16px]">rotate_right</span>
+          </button>
+          <div class="h-4 w-px bg-outline-variant/40 mx-0.5"></div>
+          <button class="p-1.5 rounded bg-surface-container-high text-secondary hover:text-white transition-colors" id="toggleBoxesBtn" title="Toggle Boxes">
+            <span class="material-symbols-outlined text-[16px]">select_all</span>
+          </button>
+          <button class="p-1.5 rounded bg-surface-container-high text-on-surface-variant hover:text-white transition-colors" id="toggleInvertBtn" title="Binarize Contrast">
+            <span class="material-symbols-outlined text-[16px]">contrast</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Document Image with Interactive Bounding Boxes Overlaid -->
+      <div class="relative w-full h-[620px] bg-[#050814] overflow-hidden flex items-center justify-center select-none" id="ocrCanvasViewport">
+        <div id="ocrImageContainer" class="relative max-w-full max-h-full flex items-center justify-center transition-transform duration-150">
+          <img 
+            id="ocrDocumentImage"
+            src="{% if document and document.restored_file_key %}/api/v1/files/{{ document.restored_file_key }}{% elif document and document.original_file_key %}/api/v1/files/{{ document.original_file_key }}{% else %}/api/v1/files/doc_1912_kdl_rest.png{% endif %}" 
+            alt="Restored Archival Raster"
+            class="max-w-full max-h-[600px] object-contain object-center block select-none rounded-lg"
+          />
+          <div id="ocrBoxesOverlay" class="absolute inset-0 pointer-events-none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Transcription Editor & Export Hub (7 cols) -->
+    <div class="lg:col-span-7 flex flex-col gap-space-md">
+      <!-- Editor Card -->
+      <div class="bg-surface-container-low/95 rounded-2xl border border-outline-variant/30 p-space-lg shadow-xl flex flex-col gap-space-md">
+        <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-xs">
+          <div class="flex items-center gap-3">
+            <span class="font-headline-sm text-sm text-white font-bold">Verified Archival Transcription</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono text-[11px] font-bold" id="ocrConfDisplay">
+              98.4% Confidence
+            </span>
+          </div>
+          <div class="flex items-center gap-2 font-mono text-xs text-slate-400">
+            <span id="wordCountDisplay">128 Words</span>
+            <span>•</span>
+            <span id="lineCountDisplay">16 Lines</span>
+          </div>
+        </div>
+
+        <!-- Search Bar within Transcription -->
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+          <input 
+            type="text" 
+            id="searchWithinOcr" 
+            placeholder="Search keywords inside extracted transcription..."
+            class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-secondary text-white text-xs pl-9 pr-24 py-2.5 rounded-xl font-mono shadow-inner"
+          />
+          <span id="searchMatchBadge" class="hidden absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[11px] font-mono font-semibold">
+            0 matches
+          </span>
+        </div>
+
+        <!-- Editable Textarea -->
+        <div class="relative">
+          <textarea 
+            id="ocrTextArea" 
+            rows="14"
+            class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-primary text-slate-200 font-mono text-xs leading-relaxed p-4 rounded-xl resize-none shadow-inner"
+            placeholder="Running PaddleOCR text recognition..."
+          ></textarea>
+        </div>
+
+        <!-- Export Hub -->
+        <div class="pt-2 border-t border-surface-container-highest/60 flex flex-wrap items-center justify-between gap-3">
+          <span class="font-mono text-xs text-slate-400 uppercase">Export Verified Transcription:</span>
+          <div class="flex items-center gap-2">
+            <a id="exportTxtBtn" href="/api/v1/ocr/{{ document.document_id if document else 'DOC-1912-KDL' }}/export/txt" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-xs font-mono text-white flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">description</span>
+              <span>TXT</span>
+            </a>
+            <a id="exportDocxBtn" href="/api/v1/ocr/{{ document.document_id if document else 'DOC-1912-KDL' }}/export/docx" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-xs font-mono text-secondary flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">article</span>
+              <span>DOCX</span>
+            </a>
+            <a id="exportJsonBtn" href="/api/v1/ocr/{{ document.document_id if document else 'DOC-1912-KDL' }}/export/json" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-xs font-mono text-tertiary flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">data_object</span>
+              <span>JSON</span>
+            </a>
+            <a id="exportPdfBtn" href="/api/v1/ocr/{{ document.document_id if document else 'DOC-1912-KDL' }}/export/pdf" class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-xs font-mono text-primary flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">picture_as_pdf</span>
+              <span>PDF</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const docId = "{{ document.document_id if document else 'DOC-1912-KDL' }}";
+  const ocrImg = document.getElementById('ocrDocumentImage');
+  const imageContainer = document.getElementById('ocrImageContainer');
+  const boxesOverlay = document.getElementById('ocrBoxesOverlay');
+  const textArea = document.getElementById('ocrTextArea');
+  const confDisp = document.getElementById('ocrConfDisplay');
+  const wordCountDisp = document.getElementById('wordCountDisplay');
+  const lineCountDisp = document.getElementById('lineCountDisplay');
+  const searchInput = document.getElementById('searchWithinOcr');
+  const searchBadge = document.getElementById('searchMatchBadge');
+  const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
+
+  let ocrData = null;
+  let currentZoom = 100;
+  let currentRotation = 0;
+
+  function updateZoom() {
+    if (imageContainer && zoomLevelDisplay) {
+      imageContainer.style.transform = `scale(${currentZoom / 100}) rotate(${currentRotation}deg)`;
+      zoomLevelDisplay.textContent = `${currentZoom}%`;
+    }
+  }
+
+  document.getElementById('zoomInBtn')?.addEventListener('click', () => {
+    if (currentZoom < 250) {
+      currentZoom += 25;
+      updateZoom();
+    }
+  });
+
+  document.getElementById('zoomOutBtn')?.addEventListener('click', () => {
+    if (currentZoom > 50) {
+      currentZoom -= 25;
+      updateZoom();
+    }
+  });
+
+  document.getElementById('resetFitBtn')?.addEventListener('click', () => {
+    currentZoom = 100;
+    currentRotation = 0;
+    updateZoom();
+  });
+
+  document.getElementById('rotateBtn')?.addEventListener('click', () => {
+    currentRotation = (currentRotation + 90) % 360;
+    updateZoom();
+  });
+
+  async function loadOcrData(force = false) {
+    try {
+      const url = force ? `/api/v1/ocr/${docId}?force_rescan=true` : `/api/v1/ocr/${docId}`;
+      ocrData = await API.get(url);
+      textArea.value = ocrData.corrected_text || ocrData.extracted_text || '';
+      confDisp.textContent = `${ocrData.average_confidence}% Confidence`;
+      updateStats();
+      renderBoundingBoxes(ocrData.text_regions || []);
+    } catch (e) {
+      console.error(e);
+      Toast.error('Could not fetch OCR transcription.');
+    }
+  }
+
+  function updateStats() {
+    const text = textArea.value.trim();
+    const words = text ? text.split(/\s+/).length : 0;
+    const lines = text ? text.split('\n').length : 0;
+    wordCountDisp.textContent = `${words} Words`;
+    lineCountDisp.textContent = `${lines} Lines`;
+  }
+
+  textArea.addEventListener('input', updateStats);
+
+  function renderBoundingBoxes(regions) {
+    boxesOverlay.innerHTML = '';
+    regions.forEach((r, idx) => {
+      const box = document.createElement('div');
+      box.className = 'ocr-box absolute border border-cyan-400/60 bg-cyan-400/10 hover:bg-cyan-400/30 cursor-pointer pointer-events-auto transition-all rounded-[2px]';
+      const norm = r.bbox_normalized || [0.1, 0.1 + idx * 0.05, 0.8, 0.04];
+      box.style.left = `${norm[0] * 100}%`;
+      box.style.top = `${norm[1] * 100}%`;
+      box.style.width = `${norm[2] * 100}%`;
+      box.style.height = `${norm[3] * 100}%`;
+      box.setAttribute('data-text', r.text || '');
+      box.setAttribute('data-line', idx);
+      box.title = `Line ${r.line_number || idx+1}: ${r.text} (${r.confidence}%)`;
+
+      // Click to scroll & highlight in textarea
+      box.addEventListener('click', () => {
+        const lines = textArea.value.split('\n');
+        let charPos = 0;
+        for (let i = 0; i < idx && i < lines.length; i++) {
+          charPos += lines[i].length + 1;
+        }
+        const lineLen = lines[idx] ? lines[idx].length : 0;
+        textArea.focus();
+        textArea.setSelectionRange(charPos, charPos + lineLen);
+        Toast.info(`Focused Line ${idx + 1}: ${r.text}`);
+      });
+
+      boxesOverlay.appendChild(box);
+    });
+  }
+
+  // Live Interactive Search in OCR
+  searchInput?.addEventListener('input', () => {
+    const query = searchInput.value.trim().toLowerCase();
+    const boxes = boxesOverlay.querySelectorAll('.ocr-box');
+
+    if (!query) {
+      if (searchBadge) searchBadge.classList.add('hidden');
+      boxes.forEach(b => {
+        b.className = 'ocr-box absolute border border-cyan-400/60 bg-cyan-400/10 hover:bg-cyan-400/30 cursor-pointer pointer-events-auto transition-all rounded-[2px]';
+      });
+      return;
+    }
+
+    let matchCount = 0;
+    let firstMatchLine = null;
+
+    boxes.forEach(b => {
+      const text = (b.getAttribute('data-text') || '').toLowerCase();
+      if (text.includes(query)) {
+        matchCount++;
+        b.className = 'ocr-box absolute border-2 border-amber-300 bg-amber-400/40 shadow-[0_0_14px_rgba(251,191,36,0.9)] cursor-pointer pointer-events-auto transition-all rounded-[2px] z-30 scale-[1.02]';
+        if (firstMatchLine === null) {
+          firstMatchLine = parseInt(b.getAttribute('data-line'), 10);
+        }
+      } else {
+        b.className = 'ocr-box absolute border border-cyan-400/20 bg-cyan-400/5 cursor-pointer pointer-events-auto transition-all rounded-[2px] opacity-40';
+      }
+    });
+
+    if (searchBadge) {
+      searchBadge.textContent = `${matchCount} match${matchCount === 1 ? '' : 'es'}`;
+      searchBadge.classList.remove('hidden');
+    }
+
+    // Scroll & select first match in textarea
+    if (matchCount > 0 && firstMatchLine !== null) {
+      const lines = textArea.value.split('\n');
+      let charPos = 0;
+      for (let i = 0; i < firstMatchLine && i < lines.length; i++) {
+        charPos += lines[i].length + 1;
+      }
+      textArea.focus();
+      const matchIdx = lines[firstMatchLine] ? lines[firstMatchLine].toLowerCase().indexOf(query) : 0;
+      const start = charPos + (matchIdx >= 0 ? matchIdx : 0);
+      const end = start + query.length;
+      textArea.setSelectionRange(start, end);
+    }
+  });
+
+  // Toggle Bounding Boxes
+  document.getElementById('toggleBoxesBtn').addEventListener('click', () => {
+    boxesOverlay.classList.toggle('hidden');
+  });
+
+  // Toggle Contrast / Invert
+  let inverted = false;
+  document.getElementById('toggleInvertBtn').addEventListener('click', () => {
+    inverted = !inverted;
+    ocrImg.style.filter = inverted ? 'grayscale(1) contrast(200%) brightness(120%)' : 'none';
+  });
+
+  // Save Transcription
+  document.getElementById('btnSaveOcr').addEventListener('click', async () => {
+    const btn = document.getElementById('btnSaveOcr');
+    btn.disabled = true;
+    try {
+      await API.post(`/api/v1/ocr/${docId}/save`, {
+        document_id: docId,
+        corrected_text: textArea.value
+      });
+      Toast.success('Audited transcription saved successfully.', 'Preservation Recorded');
+    } catch (err) {
+      Toast.error(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Re-scan
+  document.getElementById('btnRescanOcr').addEventListener('click', async () => {
+    Toast.info('Re-running Neural OCR on this document scan...');
+    loadOcrData(true);
+  });
+
+  document.addEventListener('DOMContentLoaded', loadOcrData);
+</script>
+{% endblock %}
+

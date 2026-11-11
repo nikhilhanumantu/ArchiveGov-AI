@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ArchiveGov AI — Preserving Government History with Generative AI</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600&amp;family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Custom Configuration adhering to design guidelines -->
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          navy: {
+            950: '#040714',
+            900: '#070B1C',
+            850: '#0B1230',
+            800: '#101942',
+            750: '#162256',
+            700: '#1E2C6E'
+          },
+          archival: {
+            gold: '#F5C56B',
+            goldLight: '#FFE3A8',
+            cyan: '#38BDF8',
+            violet: '#8B5CF6',
+            purple: '#6D28D9'
+          }
+        },
+        fontFamily: {
+          serif: ['"Playfair Display"', 'Georgia', 'serif'],
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace']
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body {
+    background-color: #070B1C;
+    color: #E2E8F0;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+  
+  /* Neoclassical Archival Grid Atmosphere */
+  .hero-mesh {
+    background-image: 
+      radial-gradient(circle at 75% 35%, rgba(56, 189, 248, 0.16) 0%, transparent 50%),
+      radial-gradient(circle at 25% 20%, rgba(139, 92, 246, 0.22) 0%, transparent 45%),
+      linear-gradient(to right, rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(139, 92, 246, 0.04) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+  }
+
+  .glow-purple-button {
+    background: linear-gradient(135deg, #7C3AED 0%, #6366F1 50%, #3B82F6 100%);
+    box-shadow: 0 0 25px -2px rgba(124, 58, 237, 0.55), 0 0 10px 0px rgba(56, 189, 248, 0.35);
+  }
+  .glow-purple-button:hover {
+    box-shadow: 0 0 35px 2px rgba(124, 58, 237, 0.75), 0 0 16px 2px rgba(56, 189, 248, 0.55);
+  }
+
+  /* Document Parchment Styles */
+  .parchment-degraded {
+    background: radial-gradient(circle at 35% 30%, #e2ceab 0%, #caa971 60%, #9b773d 100%);
+    box-shadow: inset 0 0 40px rgba(78, 48, 14, 0.45);
+    filter: sepia(35%) contrast(108%);
+  }
+  .parchment-enhanced {
+    background: radial-gradient(circle at 45% 30%, #fffdf8 0%, #f7edd7 65%, #ebd7b3 100%);
+    box-shadow: inset 0 0 25px rgba(180, 140, 70, 0.18);
+  }
+
+  /* Volumetric Light Rays */
+  .light-ray {
+    position: absolute;
+    transform-origin: top center;
+    background: linear-gradient(180deg, rgba(56, 189, 248, 0.25) 0%, rgba(139, 92, 246, 0.08) 50%, transparent 100%);
+    filter: blur(28px);
+    pointer-events-none;
+  }
+
+  /* Perspective Ledger transform */
+  .ledger-perspective {
+    transform: perspective(1200px) rotateY(-13deg) rotateX(8deg) rotateZ(-2deg);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .ledger-perspective:hover {
+    transform: perspective(1200px) rotateY(-6deg) rotateX(4deg) rotateZ(0deg) scale(1.02);
+  }
+
+  /* Scanning animation */
+  @keyframes laserScan {
+    0% { top: 0%; opacity: 0.9; }
+    50% { opacity: 1; }
+    100% { top: 100%; opacity: 0.9; }
+  }
+  .laser-scan {
+    animation: laserScan 3.6s ease-in-out infinite alternate;
+  }
+</style>
+</head>
+<body class="bg-navy-900 text-slate-100 antialiased selection:bg-archival-violet selection:text-white">
+<!-- ========================================== -->
+<!-- 1. NAVIGATION HEADER                       -->
+<!-- ========================================== -->
+<header class="sticky top-0 z-50 backdrop-blur-xl bg-navy-900/85 border-b border-navy-750/70" data-purpose="site-navigation">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+<!-- Logo with Classical Dome Emblem Mark -->
+<a class="flex items-center gap-3.5 group" href="#">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-archival-violet via-indigo-500 to-archival-cyan p-[1.5px] shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-transform group-hover:scale-105">
+<div class="w-full h-full bg-navy-950 rounded-[10px] flex items-center justify-center">
+<!-- Neoclassical Government Pillars / Emblem -->
+<svg class="w-5 h-5 text-archival-cyan" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 21h18"></path>
+<path d="M4 18h16"></path>
+<path d="M5 10v8"></path>
+<path d="M9 10v8"></path>
+<path d="M15 10v8"></path>
+<path d="M19 10v8"></path>
+<path d="M12 2L3 7h18l-9-5z"></path>
+</svg>
+</div>
+</div>
+<div>
+<div class="font-serif font-bold text-xl tracking-tight text-white flex items-center gap-1.5 leading-none">
+          ArchiveGov <span class="text-archival-cyan font-sans font-extrabold text-lg">AI</span>
+</div>
+<span class="block text-[10px] tracking-wider text-archival-gold font-medium uppercase mt-1">Government Records Restorer</span>
+</div>
+</a>
+<!-- Clean Navigation Links -->
+<nav class="hidden md:flex items-center space-x-9 text-sm font-medium text-slate-300">
+<a class="text-white hover:text-archival-cyan transition-colors" href="#hero">Home</a>
+<a class="hover:text-archival-cyan transition-colors" href="#features">Features</a>
+<a class="hover:text-archival-cyan transition-colors" href="#pipeline">How It Works</a>
+<a class="hover:text-archival-cyan transition-colors" href="#comparison">About</a>
+<a class="hover:text-archival-cyan transition-colors" href="#compliance">Contact</a>
+</nav>
+<!-- Right CTA Button -->
+<div class="flex items-center space-x-3">
+<a class="glow-purple-button px-5 py-2.5 rounded-xl text-white text-xs font-semibold tracking-wide transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-1.5" href="#pipeline">
+<span>Get Started</span>
+</a>
+</div>
+</div>
+</header>
+<main>
+<!-- ========================================== -->
+<!-- 2. HERO SECTION                            -->
+<!-- Exactly matches '01. Landing Page (Public)' -->
+<!-- ========================================== -->
+<section class="relative pt-10 pb-20 md:pt-16 md:pb-24 overflow-hidden hero-mesh border-b border-navy-750/50" id="hero">
+<!-- Atmospheric Ambient Lighting Elements -->
+<div class="absolute top-1/4 left-1/4 -translate-x-1/2 w-[600px] h-[450px] bg-archival-violet/20 rounded-full blur-[140px] pointer-events-none"></div>
+<div class="absolute top-1/3 right-1/4 w-[650px] h-[500px] bg-archival-cyan/20 rounded-full blur-[150px] pointer-events-none"></div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+<!-- Left Column: Typography & Action Buttons -->
+<div class="lg:col-span-6 text-left">
+<!-- Sovereign Pill Badge -->
+<div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-850/90 border border-archival-violet/40 text-[11px] font-mono text-archival-gold mb-6 shadow-inner">
+<span class="w-2 h-2 rounded-full bg-archival-cyan animate-pulse"></span>
+<span>National Archives &amp; Records AI Platform</span>
+</div>
+<!-- Massive Playfair Display Headline -->
+<h1 class="font-serif text-4xl sm:text-5xl lg:text-[58px] font-bold tracking-tight text-white leading-[1.12] mb-6">
+            Preserving<br/>
+            Government History<br/>
+            with <span class="italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-archival-gold via-amber-200 to-archival-gold drop-shadow-[0_0_20px_rgba(245,197,107,0.35)]">Generative AI</span>
+</h1>
+<!-- Value Proposition Subhead -->
+<p class="text-base sm:text-lg text-slate-300 font-normal leading-relaxed max-w-xl mb-8">
+            Restore, enhance, and digitize historical government records with sovereign, certified neural restoration algorithms.
+          </p>
+<!-- Dual CTAs: Get Started -> & Watch Demo -->
+<div class="flex flex-wrap items-center gap-4">
+<a class="glow-purple-button px-7 py-3.5 rounded-xl text-white text-sm font-semibold tracking-wide transition-all transform hover:-translate-y-0.5 inline-flex items-center gap-2" href="#features">
+<span>Get Started</span>
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</a>
+<a class="px-6 py-3.5 rounded-xl bg-navy-850/90 hover:bg-navy-800 border border-slate-700/80 hover:border-archival-violet/60 text-slate-200 text-sm font-medium inline-flex items-center gap-2.5 transition-all" href="#comparison">
+<span class="w-6 h-6 rounded-full bg-archival-gold/20 flex items-center justify-center text-archival-gold">
+<svg class="w-3.5 h-3.5 translate-x-[1px]" fill="currentColor" viewbox="0 0 20 20">
+<path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path>
+</svg>
+</span>
+<span>Watch Demo</span>
+</a>
+</div>
+<!-- Micro Authority Metrics -->
+<div class="mt-10 pt-6 border-t border-navy-750/60 flex items-center gap-8 text-xs font-mono text-slate-400">
+<div>
+<span class="text-white font-bold block text-sm font-sans">99.4%</span>
+<span>Restoration Fidelity</span>
+</div>
+<div class="w-px h-6 bg-navy-750"></div>
+<div>
+<span class="text-archival-cyan font-bold block text-sm font-sans">OAIS ISO 14721</span>
+<span>Archival Standard</span>
+</div>
+<div class="w-px h-6 bg-navy-750"></div>
+<div>
+<span class="text-archival-gold font-bold block text-sm font-sans">Zero Hallucination</span>
+<span>Constrained OCR</span>
+</div>
+</div>
+</div>
+<!-- Right Column: Visual Centerpiece -->
+<!-- Floating historical government ledger in front of glowing neoclassical capitol dome -->
+<div class="lg:col-span-6 relative flex items-center justify-center">
+<!-- Background Neoclassical Capitol Dome Graphic Representation -->
+<div class="relative w-full aspect-[4/3] max-w-lg flex items-center justify-center">
+<!-- Volumetric Ray Layers -->
+<div class="light-ray w-72 h-80 -top-8 left-12 rotate-[-22deg]"></div>
+<div class="light-ray w-80 h-96 -top-10 right-8 rotate-[25deg]"></div>
+<!-- Illumined Capitol Dome Silhouette Backdrop -->
+<div class="absolute inset-0 flex items-center justify-center opacity-35">
+<svg class="w-full h-full text-archival-cyan/50 filter drop-shadow-[0_0_35px_rgba(56,189,248,0.5)]" fill="none" stroke="currentColor" viewbox="0 0 400 300">
+<!-- Dome Crown & Cupola -->
+<line stroke-width="2.5" x1="200" x2="200" y1="15" y2="40"></line>
+<circle cx="200" cy="15" fill="currentColor" r="3.5"></circle>
+<path d="M185 45 C 185 35, 215 35, 215 45 Z" stroke-width="1.8"></path>
+<rect height="22" rx="1" stroke-width="1.5" width="40" x="180" y="45"></rect>
+<path d="M160 85 C 160 55, 240 55, 240 85 Z" stroke-width="2"></path>
+<path d="M125 150 C 125 80, 275 80, 275 150 Z" stroke-width="2.5"></path>
+<!-- Dome Ribs -->
+<path d="M200 80 Q 200 115 200 150" stroke-width="1.5"></path>
+<path d="M170 90 Q 180 120 180 150" stroke-width="1"></path>
+<path d="M230 90 Q 220 120 220 150" stroke-width="1"></path>
+<path d="M145 110 Q 160 130 160 150" stroke-width="1"></path>
+<path d="M255 110 Q 240 130 240 150" stroke-width="1"></path>
+<!-- Dome Base Columns & Rotunda -->
+<rect height="20" stroke-width="2" width="180" x="110" y="150"></rect>
+<line stroke-width="2" x1="125" x2="125" y1="170" y2="205"></line>
+<line stroke-width="2" x1="145" x2="145" y1="170" y2="205"></line>
+<line stroke-width="2" x1="165" x2="165" y1="170" y2="205"></line>
+<line stroke-width="2" x1="185" x2="185" y1="170" y2="205"></line>
+<line stroke-width="2" x1="215" x2="215" y1="170" y2="205"></line>
+<line stroke-width="2" x1="235" x2="235" y1="170" y2="205"></line>
+<line stroke-width="2" x1="255" x2="255" y1="170" y2="205"></line>
+<line stroke-width="2" x1="275" x2="275" y1="170" y2="205"></line>
+<!-- Pediment & Base Architraves -->
+<polygon fill="none" points="90,205 310,205 200,180" stroke-width="2"></polygon>
+<rect height="25" stroke-width="2" width="260" x="70" y="205"></rect>
+<!-- Massive Portico Columns -->
+<line stroke-width="2.5" x1="90" x2="90" y1="230" y2="280"></line>
+<line stroke-width="2.5" x1="120" x2="120" y1="230" y2="280"></line>
+<line stroke-width="2.5" x1="150" x2="150" y1="230" y2="280"></line>
+<line stroke-width="2.5" x1="180" x2="180" y1="230" y2="280"></line>
+<line stroke-width="2.5" x1="220" x2="220" y1="230" y2="280"></line>
+<line stroke-width="2.5" x1="250" x2="250" y1="230" y2="280"></line>
+<line stroke-width="2.5" x1="280" x2="280" y1="230" y2="280"></line>
+<line stroke-width="2.5" x1="310" x2="310" y1="230" y2="280"></line>
+<rect height="15" stroke-width="2.5" width="300" x="50" y="280"></rect>
+</svg>
+</div>
+<!-- Floating 3D Historical Document Ledger (Open Diptych Book) -->
+<div class="relative z-20 w-[92%] sm:w-[88%] ledger-perspective rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85),0_0_40px_rgba(56,189,248,0.25)] border border-archival-gold/40 overflow-hidden bg-navy-950 p-2 sm:p-3">
+<!-- Ledger Open Pages Split -->
+<div class="relative flex h-64 sm:h-76 rounded-lg overflow-hidden border border-archival-gold/30">
+<!-- Left Folio: Degraded Original Historical Deed -->
+<div class="w-1/2 h-full parchment-degraded p-3.5 sm:p-5 flex flex-col justify-between relative border-r border-amber-950/40 text-stone-900 select-none">
+<div class="flex items-center justify-between">
+<span class="text-[9px] font-mono font-bold uppercase tracking-wider bg-amber-950/70 text-amber-200 px-2 py-0.5 rounded">
+                      Original Degraded
+                    </span>
+<span class="text-[9px] font-mono text-amber-950/70">1912 Folio</span>
+</div>
+<!-- Historical Degradation Artefacts -->
+<div class="space-y-1.5 mt-2 opacity-80 filter blur-[0.3px]">
+<div class="text-center pb-1 border-b border-stone-800/40 font-serif font-bold text-xs uppercase tracking-wide text-stone-950">
+                      Government of India
+                    </div>
+<div class="text-[10px] text-center italic font-serif text-stone-900">
+                      Land Settlement Record
+                    </div>
+<p class="text-[9px] font-serif leading-relaxed text-stone-900 line-clamp-3">
+                      Survey No. 127 • Revenue Dept • Village: Kuddalur. Pursuant to authentic registry, the tenure of land rights demarcated under collectorate seal...
+                    </p>
+</div>
+<!-- Faded Imperial Stamp -->
+<div class="flex items-center justify-between pt-2">
+<div class="w-20 h-10 border border-dashed border-red-950/60 rounded flex items-center justify-center -rotate-6 text-[8px] font-bold text-red-950">
+                      [DAMAGED SEAL]
+                    </div>
+<span class="text-[8px] font-mono text-amber-950/80">Stains: 64%</span>
+</div>
+<!-- Distress blotches overlay -->
+<div class="absolute inset-0 bg-gradient-to-tr from-amber-950/25 via-transparent to-stone-950/30 pointer-events-none"></div>
+</div>
+<!-- Right Folio: Restored Neural Folio -->
+<div class="w-1/2 h-full parchment-enhanced p-3.5 sm:p-5 flex flex-col justify-between relative text-slate-900 select-none">
+<div class="flex items-center justify-between">
+<span class="text-[9px] font-mono font-bold uppercase tracking-wider bg-emerald-800 text-emerald-100 px-2 py-0.5 rounded shadow">
+                      AI Enhanced (98.4%)
+                    </span>
+<span class="text-[9px] font-mono text-emerald-800 font-bold">PSNR 38.6dB</span>
+</div>
+<!-- Restored Clear Document -->
+<div class="space-y-1.5 mt-2">
+<div class="text-center pb-1 border-b border-stone-900/60 font-serif font-bold text-xs uppercase tracking-wide text-black">
+                      Government of India
+                    </div>
+<div class="text-[10px] text-center italic font-serif font-semibold text-slate-950">
+                      Land Settlement Record
+                    </div>
+<p class="text-[9px] font-serif leading-relaxed text-slate-950 font-medium">
+                      Survey No. 127 • Revenue Dept • Village: Kuddalur. Area: 6.24 acres. Date: 12-03-1912. Landholder: Arthur J. Pemberton. Verified by Revenue Inspector.
+                    </p>
+</div>
+<!-- Reconstructed Official Stamp -->
+<div class="flex items-center justify-between pt-2">
+<div class="w-20 h-10 border-2 border-emerald-900 rounded bg-emerald-500/10 flex items-center justify-center -rotate-2 text-[8px] font-bold text-emerald-950">
+                      VERIFIED 1912
+                    </div>
+<span class="text-[8px] font-mono text-emerald-900 font-semibold">SSIM: 0.984</span>
+</div>
+</div>
+<!-- Laser Scanning Beam -->
+<div class="laser-scan absolute left-0 right-0 h-1 bg-gradient-to-r from-archival-violet via-archival-cyan to-archival-gold shadow-[0_0_15px_#38BDF8] z-30 pointer-events-none"></div>
+<!-- Center Spine Dividing Badge -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
+<div class="w-7 h-7 rounded-full bg-navy-950 border-2 border-archival-cyan text-archival-cyan text-[10px] font-mono font-bold flex items-center justify-center shadow-lg">
+                    ↔
+                  </div>
+</div>
+</div>
+<!-- HUD Bottom Status -->
+<div class="mt-2.5 px-2 flex items-center justify-between text-[10px] font-mono text-slate-400">
+<span class="text-archival-cyan">AI Restoration Pipeline Active</span>
+<span class="text-archival-gold">Tamper-Proof Audit Log SHA-256</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================================== -->
+<!-- 3. CORE CAPABILITIES (4 FEATURE CARDS)     -->
+<!-- Matches horizontal glassmorphic quartet    -->
+<!-- ========================================== -->
+<section class="py-14 sm:py-16 bg-navy-950/80 border-b border-navy-750/60 relative z-20" id="features">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+<!-- Card 1: Image Restoration -->
+<div class="group p-5 rounded-2xl bg-gradient-to-b from-navy-850/90 to-navy-900/90 border border-navy-750 hover:border-archival-violet/80 transition-all duration-300 hover:-translate-y-1 shadow-lg hover:shadow-[0_10px_25px_-5px_rgba(139,92,246,0.3)]">
+<div class="w-11 h-11 rounded-xl bg-purple-950/80 border border-archival-violet/40 flex items-center justify-center text-archival-violet mb-4 group-hover:scale-105 transition-transform">
+<!-- Restoration / Image Clean Icon -->
+<svg class="w-5 h-5 text-archival-violet" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<h3 class="font-serif font-bold text-base text-white mb-1.5 group-hover:text-archival-gold transition-colors">
+            Image Restoration
+          </h3>
+<p class="text-xs text-slate-300 leading-relaxed">
+            Remove damage &amp; noise. Reconstruct missing corners, tear folds, water spots, and mold decay.
+          </p>
+</div>
+<!-- Card 2: AI Enhancement -->
+<div class="group p-5 rounded-2xl bg-gradient-to-b from-navy-850/90 to-navy-900/90 border border-navy-750 hover:border-archival-cyan/80 transition-all duration-300 hover:-translate-y-1 shadow-lg hover:shadow-[0_10px_25px_-5px_rgba(56,189,248,0.3)]">
+<div class="w-11 h-11 rounded-xl bg-cyan-950/80 border border-archival-cyan/40 flex items-center justify-center text-archival-cyan mb-4 group-hover:scale-105 transition-transform">
+<!-- Sparkles / Enhancement Icon -->
+<svg class="w-5 h-5 text-archival-cyan" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<h3 class="font-serif font-bold text-base text-white mb-1.5 group-hover:text-archival-cyan transition-colors">
+            AI Enhancement
+          </h3>
+<p class="text-xs text-slate-300 leading-relaxed">
+            Improve clarity &amp; resolution. 4x neural super-resolution to sharpen faded cursive calligraphy.
+          </p>
+</div>
+<!-- Card 3: Text Extraction (OCR) -->
+<div class="group p-5 rounded-2xl bg-gradient-to-b from-navy-850/90 to-navy-900/90 border border-navy-750 hover:border-archival-gold/80 transition-all duration-300 hover:-translate-y-1 shadow-lg hover:shadow-[0_10px_25px_-5px_rgba(245,197,107,0.3)]">
+<div class="w-11 h-11 rounded-xl bg-amber-950/80 border border-archival-gold/40 flex items-center justify-center text-archival-gold mb-4 group-hover:scale-105 transition-transform">
+<!-- Text Scanner / OCR Icon -->
+<svg class="w-5 h-5 text-archival-gold" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<h3 class="font-serif font-bold text-base text-white mb-1.5 group-hover:text-archival-gold transition-colors">
+            Text Extraction (OCR)
+          </h3>
+<p class="text-xs text-slate-300 leading-relaxed">
+            Convert to editable text. Deep multilingual recognition for historical typewriter, print, and script.
+          </p>
+</div>
+<!-- Card 4: Digital Archive -->
+<div class="group p-5 rounded-2xl bg-gradient-to-b from-navy-850/90 to-navy-900/90 border border-navy-750 hover:border-indigo-400/80 transition-all duration-300 hover:-translate-y-1 shadow-lg hover:shadow-[0_10px_25px_-5px_rgba(99,102,241,0.3)]">
+<div class="w-11 h-11 rounded-xl bg-indigo-950/80 border border-indigo-400/40 flex items-center justify-center text-indigo-300 mb-4 group-hover:scale-105 transition-transform">
+<!-- Secure Vault Archive Icon -->
+<svg class="w-5 h-5 text-indigo-300" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8m-5 5h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293h3.172a1 1 0 00.707-.293l2.414-2.414a1 1 0 01.707-.293H20" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<h3 class="font-serif font-bold text-base text-white mb-1.5 group-hover:text-indigo-300 transition-colors">
+            Digital Archive
+          </h3>
+<p class="text-xs text-slate-300 leading-relaxed">
+            Store, search &amp; manage. Immutable version logs, cryptographic proofs, and metadata taxonomy.
+          </p>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================================== -->
+<!-- 4. AUTOMATED 4-STEP PIPELINE               -->
+<!-- ========================================== -->
+<section class="py-20 bg-navy-900 relative border-b border-navy-750/60" id="pipeline">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center max-w-3xl mx-auto mb-14">
+<span class="text-xs font-mono font-semibold tracking-widest text-archival-cyan uppercase">
+          Automated 4-Step Pipeline
+        </span>
+<h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mt-2">
+          From Fragile Physical Folio to Verified Digital Asset
+        </h2>
+<p class="text-slate-400 text-sm mt-3">
+          An end-to-end provenance preservation cycle designed under federal records governance regulations.
+        </p>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Step 1 -->
+<div class="p-6 rounded-2xl bg-navy-850/80 border border-navy-750 relative hover:border-archival-violet transition-colors">
+<div class="w-10 h-10 rounded-xl bg-archival-violet text-white font-mono font-bold text-sm flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(139,92,246,0.4)]">
+            01
+          </div>
+<h4 class="font-serif font-bold text-lg text-white mb-2">Ingestion &amp; Tiling</h4>
+<p class="text-xs text-slate-300 leading-relaxed">
+            High-resolution TIFF, PDF, or RAW ingestion with automatic multi-channel color calibration and high-DPI tiling.
+          </p>
+<div class="mt-4 pt-3 border-t border-navy-750 text-[10px] font-mono text-archival-cyan">
+            OpenCV Preprocessing
+          </div>
+</div>
+<!-- Step 2 -->
+<div class="p-6 rounded-2xl bg-navy-850/80 border border-navy-750 relative hover:border-archival-cyan transition-colors">
+<div class="w-10 h-10 rounded-xl bg-archival-cyan text-navy-950 font-mono font-bold text-sm flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(56,189,248,0.4)]">
+            02
+          </div>
+<h4 class="font-serif font-bold text-lg text-white mb-2">Damage Segmentation</h4>
+<p class="text-xs text-slate-300 leading-relaxed">
+            Neural analysis maps tears, biological molds, ink bleeds, foxing, and folded corners to map precise repair regions.
+          </p>
+<div class="mt-4 pt-3 border-t border-navy-750 text-[10px] font-mono text-archival-cyan">
+            Semantic Mask Detection
+          </div>
+</div>
+<!-- Step 3 -->
+<div class="p-6 rounded-2xl bg-navy-850/80 border border-navy-750 relative hover:border-archival-gold transition-colors">
+<div class="w-10 h-10 rounded-xl bg-archival-gold text-navy-950 font-mono font-bold text-sm flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(245,197,107,0.4)]">
+            03
+          </div>
+<h4 class="font-serif font-bold text-lg text-white mb-2">Neural Inpainting</h4>
+<p class="text-xs text-slate-300 leading-relaxed">
+            Generative diffusion fills missing fibres and neutralizes yellowed oxidization without hallucinating non-authentic details.
+          </p>
+<div class="mt-4 pt-3 border-t border-navy-750 text-[10px] font-mono text-archival-gold">
+            Historical Fidelity Check
+          </div>
+</div>
+<!-- Step 4 -->
+<div class="p-6 rounded-2xl bg-navy-850/80 border border-navy-750 relative hover:border-emerald-400 transition-colors">
+<div class="w-10 h-10 rounded-xl bg-emerald-400 text-navy-950 font-mono font-bold text-sm flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(52,211,153,0.4)]">
+            04
+          </div>
+<h4 class="font-serif font-bold text-lg text-white mb-2">OCR &amp; Vault Ingestion</h4>
+<p class="text-xs text-slate-300 leading-relaxed">
+            Automated text transcription with confidence scoring, coupled with SHA-256 tamper-proof archival packaging.
+          </p>
+<div class="mt-4 pt-3 border-t border-navy-750 text-[10px] font-mono text-emerald-400">
+            OAIS SIP/AIP Generation
+          </div>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================================== -->
+<!-- 5. BEFORE & AFTER RESTORATION SHOWCASE     -->
+<!-- ========================================== -->
+<section class="py-20 bg-navy-950 border-b border-navy-750/70" id="comparison">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+<!-- Text Explanation -->
+<div class="lg:col-span-6">
+<span class="text-xs font-mono font-semibold tracking-widest text-archival-gold uppercase">
+            Unrivalled Fidelity
+          </span>
+<h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mt-2 leading-tight">
+            Restoring Fragile 19th &amp; 20th Century Heritage Records
+          </h2>
+<p class="text-slate-300 text-sm mt-4 leading-relaxed">
+            ArchiveGov AI preserves the intrinsic character of historical paper while eliminating decades of atmospheric acid-damage, dampness, and insect holes. The generative models are strictly constrained to historic typography dictionaries to guarantee legal accuracy.
+          </p>
+<ul class="mt-6 space-y-3.5 text-sm text-slate-200">
+<li class="flex items-center gap-3">
+<span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
+<span>Zero hallucination constraint on government signatures &amp; numbers</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
+<span>Complete audit trail and versioned provenance retention</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
+<span>Side-by-side verification and manual revision studio</span>
+</li>
+</ul>
+<div class="mt-8">
+<a class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-archival-cyan hover:text-white transition-colors" href="#pipeline">
+<span>Explore Full Interactive Restoration Studio</span>
+<span>→</span>
+</a>
+</div>
+</div>
+<!-- Interactive Before/After Card View -->
+<div class="lg:col-span-6">
+<div class="rounded-2xl border border-navy-750 bg-navy-850 p-4 sm:p-5 shadow-2xl">
+<div class="flex items-center justify-between pb-3 mb-3 border-b border-navy-750 text-xs font-mono text-slate-400">
+<span>CASE: Land_Record_1920.jpg</span>
+<span class="text-archival-gold font-bold">CONFIDENCE: 98.7%</span>
+</div>
+<!-- Side-by-Side Split View -->
+<div class="relative h-72 rounded-xl overflow-hidden flex border border-navy-700">
+<!-- Left: Degraded -->
+<div class="w-1/2 h-full parchment-degraded p-4 text-stone-900 select-none flex flex-col justify-between border-r border-amber-950/30">
+<span class="text-[9px] uppercase font-bold text-amber-950 bg-amber-200/70 inline-block px-1.5 py-0.5 rounded self-start font-mono">
+                  Degraded State
+                </span>
+<div class="font-serif text-[10px] space-y-1 opacity-75">
+<p class="font-bold text-stone-950">PROVINCIAL REVENUE REGISTER</p>
+<p>Survey No: 412 / Sub-Division: B</p>
+<p class="blur-[0.7px]">Name of Landholder: [Damaged / Illegible]</p>
+</div>
+<div class="text-[8px] text-amber-950 font-mono">Tears: 3 • Stains: 64% • Contrast: Low</div>
+</div>
+<!-- Right: Restored -->
+<div class="w-1/2 h-full parchment-enhanced p-4 text-slate-900 select-none flex flex-col justify-between">
+<span class="text-[9px] uppercase font-bold text-emerald-900 bg-emerald-200/90 inline-block px-1.5 py-0.5 rounded self-start font-mono">
+                  AI Restored State
+                </span>
+<div class="font-serif text-[10px] space-y-1">
+<p class="font-bold text-black">PROVINCIAL REVENUE REGISTER</p>
+<p class="text-slate-900">Survey No: 412 / Sub-Division: B</p>
+<p class="text-slate-950 font-semibold">Name of Landholder: Arthur J. Pemberton</p>
+</div>
+<div class="text-[8px] text-emerald-900 font-mono">Clarity: +42% • PSNR: 38.6 dB • SSIM: 0.98</div>
+</div>
+<!-- Center Divider Knob -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-navy-950 border-2 border-archival-cyan shadow-lg flex items-center justify-center text-archival-cyan text-[10px] font-bold">
+                ↔
+              </div>
+</div>
+<!-- Footer Details -->
+<div class="mt-4 flex items-center justify-between text-xs text-slate-300">
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-archival-cyan animate-pulse"></span>
+                Multi-spectral inpainting completed in 3.8s
+              </span>
+<a class="px-3.5 py-1.5 rounded-lg bg-navy-750 hover:bg-navy-700 text-white text-[11px] font-medium transition-colors" href="#pipeline">
+                Launch Studio
+              </a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ========================================== -->
+<!-- 6. COMPLIANCE & GOVERNANCE BADGES          -->
+<!-- ========================================== -->
+<section class="py-16 bg-navy-900 relative border-b border-navy-750/60" id="compliance">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-10">
+<p class="text-xs uppercase font-mono tracking-widest text-slate-400">Institutional Governance &amp; Security Certifications</p>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+<div class="p-5 rounded-2xl border border-navy-750 bg-navy-850/50 text-center hover:border-archival-gold transition-colors">
+<span class="block text-archival-gold font-mono font-bold text-lg mb-1">ISO 14721</span>
+<span class="text-xs text-slate-300">Open Archival Information System (OAIS) Compliant</span>
+</div>
+<div class="p-5 rounded-2xl border border-navy-750 bg-navy-850/50 text-center hover:border-archival-cyan transition-colors">
+<span class="block text-archival-cyan font-mono font-bold text-lg mb-1">SHA-256</span>
+<span class="text-xs text-slate-300">Immutable Cryptographic Provenance Ledger</span>
+</div>
+<div class="p-5 rounded-2xl border border-navy-750 bg-navy-850/50 text-center hover:border-archival-violet transition-colors">
+<span class="block text-archival-violet font-mono font-bold text-lg mb-1">GovCloud</span>
+<span class="text-xs text-slate-300">FedRAMP High &amp; On-Premise Air-Gapped Ready</span>
+</div>
+<div class="p-5 rounded-2xl border border-navy-750 bg-navy-850/50 text-center hover:border-emerald-400 transition-colors">
+<span class="block text-emerald-400 font-mono font-bold text-lg mb-1">NARA M-19-21</span>
+<span class="text-xs text-slate-300">Federal Electronic Records Mandate Certified</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- ========================================== -->
+<!-- 7. CLEAN ARCHIVAL FOOTER                   -->
+<!-- ========================================== -->
+<footer class="bg-navy-950 pt-16 pb-12 border-t border-navy-750/80">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 md:grid-cols-5 gap-10 mb-12">
+<!-- Brand Summary -->
+<div class="md:col-span-2">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-archival-violet to-archival-cyan p-[1px]">
+<div class="w-full h-full bg-navy-900 rounded-[7px] flex items-center justify-center">
+<svg class="w-4 h-4 text-archival-cyan" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 21h18M4 18h16M5 10v8M9 10v8M15 10v8M19 10v8M12 2L3 7h18l-9-5z"></path>
+</svg>
+</div>
+</div>
+<span class="font-serif font-bold text-lg text-white">ArchiveGov AI</span>
+</div>
+<p class="text-xs text-slate-400 leading-relaxed max-w-sm mb-4">
+          The sovereign generative intelligence platform dedicated to reconstructing, cataloging, and safeguarding endangered civil records and cultural patrimony.
+        </p>
+<div class="text-[11px] font-mono text-archival-gold">
+          Department of Digital Preservation • Gov-Cloud Certified
+        </div>
+</div>
+<!-- Column 1 -->
+<div>
+<h5 class="text-xs font-semibold uppercase tracking-wider text-white mb-4">AI Engines</h5>
+<ul class="space-y-2.5 text-xs text-slate-400">
+<li><a class="hover:text-archival-cyan transition-colors" href="#">LaMa Inpainting</a></li>
+<li><a class="hover:text-archival-cyan transition-colors" href="#">Real-ESRGAN 4x</a></li>
+<li><a class="hover:text-archival-cyan transition-colors" href="#">PaddleOCR Antique</a></li>
+<li><a class="hover:text-archival-cyan transition-colors" href="#">Damage Analysis Neural Map</a></li>
+</ul>
+</div>
+<!-- Column 2 -->
+<div>
+<h5 class="text-xs font-semibold uppercase tracking-wider text-white mb-4">Governance</h5>
+<ul class="space-y-2.5 text-xs text-slate-400">
+<li><a class="hover:text-archival-cyan transition-colors" href="#">Security Architecture</a></li>
+<li><a class="hover:text-archival-cyan transition-colors" href="#">FedRAMP Compliance</a></li>
+<li><a class="hover:text-archival-cyan transition-colors" href="#">OAIS ISO Standard</a></li>
+<li><a class="hover:text-archival-cyan transition-colors" href="#">Air-Gapped Deployment</a></li>
+</ul>
+</div>
+<!-- Column 3 -->
+<div>
+<h5 class="text-xs font-semibold uppercase tracking-wider text-white mb-4">Portals</h5>
+<ul class="space-y-2.5 text-xs text-slate-400">
+<li><a class="hover:text-archival-cyan transition-colors" href="#">Officer SSO Login</a></li>
+<li><a class="hover:text-archival-cyan transition-colors" href="#">Batch Upload API</a></li>
+<li><a class="hover:text-archival-cyan transition-colors" href="#">Audit &amp; Provenance Logs</a></li>
+<li><a class="hover:text-archival-cyan transition-colors" href="#">Technical Documentation</a></li>
+</ul>
+</div>
+</div>
+<!-- Bottom Copyright -->
+<div class="pt-8 border-t border-navy-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+<p>© 2024 ArchiveGov AI Inc. Sovereign Heritage Intelligence. All rights reserved.</p>
+<div class="flex items-center space-x-6 text-[11px]">
+<a class="hover:text-slate-400 transition-colors" href="#">Privacy Protocol</a>
+<a class="hover:text-slate-400 transition-colors" href="#">Terms of Governance</a>
+<a class="hover:text-slate-400 transition-colors" href="#">Security Whitepaper</a>
+</div>
+</div>
+</div>
+</footer>
+</body></html>
