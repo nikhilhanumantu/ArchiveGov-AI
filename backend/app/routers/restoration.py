@@ -3,13 +3,23 @@ import json
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from backend.app.schemas.restoration import RestorationJobCreate, FinegrainEnhanceRequest, OpenRouterEnhanceRequest, GoogleAIStudioEnhanceRequest
-from backend.app.core.dependencies import get_current_user
+from backend.app.schemas.restoration import (
+    RestorationJobCreate,
+    FinegrainEnhanceRequest,
+    OpenRouterEnhanceRequest,
+    GoogleAIStudioEnhanceRequest,
+    RealESRGANEnhanceRequest,
+    GFPGANEnhanceRequest
+)
+from backend.app.core.dependencies import get_current_user, require_permission
+from backend.app.core.permissions import Permission
 from backend.app.database.repositories.job_repo import RestorationJobRepository
 from backend.app.database.repositories.document_repo import DocumentRepository
 from backend.app.database.repositories.audit_repo import AuditRepository
 from backend.app.database.repositories.version_repo import DocumentVersionRepository
 from backend.app.storage.local_storage import storage
+from backend.app.ai.enhancement.realesrgan_adapter import realesrgan_adapter
+from backend.app.ai.enhancement.gfpgan_adapter import gfpgan_adapter
 from backend.app.ai.enhancement.finegrain_adapter import finegrain_adapter
 from backend.app.ai.enhancement.openrouter_gemini_adapter import openrouter_gemini_adapter
 from backend.app.ai.enhancement.google_ai_studio_adapter import google_ai_studio_adapter
@@ -22,7 +32,7 @@ audit_repo = AuditRepository()
 version_repo = DocumentVersionRepository()
 
 @router.post("/jobs")
-def create_restoration_job(request: RestorationJobCreate, user: dict = Depends(get_current_user)):
+def create_restoration_job(request: RestorationJobCreate, user: dict = Depends(require_permission(Permission.RESTORATION_RUN))):
     doc = doc_repo.find_by_id(request.document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Target document not found.")
@@ -123,8 +133,150 @@ def get_finegrain_status(user: dict = Depends(get_current_user)):
     """Check connectivity and operational status of finegrain/finegrain-image-enhancer."""
     return finegrain_adapter.get_status()
 
+@router.post("/realesrgan")
+def realesrgan_enhance_document(request: RealESRGANEnhanceRequest, user: dict = Depends(require_permission(Permission.RESTORATION_RUN))):
+    """
+    On-demand Real-ESRGAN super-resolution & unsharp kernel restoration.
+    """
+    doc = doc_repo.find_by_id(request.document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Target document not found.")
+
+    orig_key = doc.get("original_file_key")
+    if not orig_key:
+        raise HTTPException(status_code=400, detail="Target document has no original file associated.")
+
+    input_path = storage.resolve_path(orig_key)
+    if not input_path or not input_path.exists():
+        raise HTTPException(status_code=404, detail=f"Source file for {orig_key} not found in archive storage.")
+
+    ext = input_path.suffix if input_path.suffix else ".png"
+    enhanced_key = f"realesrgan_{request.document_id}_{uuid.uuid4().hex[:6]}{ext}"
+    output_path = storage.restored / enhanced_key
+
+    result = realesrgan_adapter.enhance(
+        input_path=str(input_path),
+        output_path=str(output_path),
+        outscale=request.scale or 2.0
+    )
+
+    ver_id = f"VER-ESR-{uuid.uuid4().hex[:6].upper()}"
+    version_repo.create({
+        "version_id": ver_id,
+        "document_id": request.document_id,
+        "version_number": "v2.0-esrgan",
+        "parent_version_id": doc.get("current_version_id"),
+        "version_type": "restored",
+        "file_key": enhanced_key,
+        "model_used": result.get("engine", "Real-ESRGAN"),
+        "parameters": {"scale": request.scale or 2.0},
+        "notes": f"High-fidelity super resolution ({result.get('engine')})"
+    })
+
+    doc_repo.update(request.document_id, {
+        "restored_file_key": enhanced_key,
+        "current_version_id": ver_id,
+        "status": "pending_review"
+    })
+
+    audit_repo.log(
+        user_id=user["_id"],
+        action="REALESRGAN_ENHANCEMENT",
+        resource_type="document",
+        resource_id=request.document_id,
+        metadata={"output_key": enhanced_key, "scale": request.scale}
+    )
+
+    return {
+        "success": True,
+        "document_id": request.document_id,
+        "output_file_key": enhanced_key,
+        "file_url": f"/api/v1/files/{enhanced_key}",
+        "engine": result.get("engine"),
+        "metrics": result
+    }
+
+@router.get("/gfpgan-status")
+def get_gfpgan_status(user: dict = Depends(get_current_user)):
+    """Check connectivity and operational status of GFPGAN face restoration model."""
+    return gfpgan_adapter.get_status()
+
+@router.post("/gfpgan-enhance")
+def gfpgan_enhance_document(request: GFPGANEnhanceRequest, user: dict = Depends(require_permission(Permission.RESTORATION_RUN))):
+    """
+    Facial detail restoration & portrait super-resolution using GFPGAN algorithm.
+    """
+    doc = doc_repo.find_by_id(request.document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Target document not found.")
+
+    orig_key = doc.get("original_file_key")
+    if not orig_key:
+        raise HTTPException(status_code=400, detail="Target document has no original file associated.")
+
+    input_path = storage.resolve_path(orig_key)
+    if not input_path or not input_path.exists():
+        raise HTTPException(status_code=404, detail=f"Source file for {orig_key} not found in archive storage.")
+
+    ext = input_path.suffix if input_path.suffix else ".png"
+    enhanced_key = f"gfpgan_{request.document_id}_{uuid.uuid4().hex[:6]}{ext}"
+    output_path = storage.restored / enhanced_key
+
+    result = gfpgan_adapter.enhance(
+        input_path=str(input_path),
+        output_path=str(output_path),
+        upscale=request.upscale or 2,
+        only_center_face=bool(request.only_center_face),
+        weight=request.weight if request.weight is not None else 0.5
+    )
+
+    ver_id = f"VER-GFP-{uuid.uuid4().hex[:6].upper()}"
+    version_repo.create({
+        "version_id": ver_id,
+        "document_id": request.document_id,
+        "version_number": "v2.4-gfpgan",
+        "parent_version_id": doc.get("current_version_id"),
+        "version_type": "restored",
+        "file_key": enhanced_key,
+        "model_used": "GFPGAN v1.4 (Facial Prior Restoration & Upscaling)",
+        "parameters": {
+            "upscale": request.upscale or 2,
+            "only_center_face": bool(request.only_center_face),
+            "weight": request.weight if request.weight is not None else 0.5,
+            "faces_detected": result.get("faces_detected", 0)
+        },
+        "notes": f"Facial restoration and 2x upscaling ({result.get('engine')}, {result.get('faces_detected', 0)} faces restored)"
+    })
+
+    doc_repo.update(request.document_id, {
+        "restored_file_key": enhanced_key,
+        "current_version_id": ver_id,
+        "status": "pending_review"
+    })
+
+    audit_repo.log(
+        user_id=user["_id"],
+        action="GFPGAN_ENHANCEMENT",
+        resource_type="document",
+        resource_id=request.document_id,
+        metadata={
+            "output_key": enhanced_key,
+            "engine": result.get("engine"),
+            "faces_detected": result.get("faces_detected", 0)
+        }
+    )
+
+    return {
+        "success": True,
+        "document_id": request.document_id,
+        "output_file_key": enhanced_key,
+        "file_url": f"/api/v1/files/{enhanced_key}",
+        "engine": result.get("engine"),
+        "metrics": result
+    }
+
 @router.post("/finegrain-enhance")
-def finegrain_enhance_document(request: FinegrainEnhanceRequest, user: dict = Depends(get_current_user)):
+def finegrain_enhance_document(request: FinegrainEnhanceRequest, user: dict = Depends(require_permission(Permission.RESTORATION_RUN))):
     """
     On-demand Finegrain Diffusion Super-Resolution & Paper Restoration.
     Accepts all 13 Finegrain parameters, enhances the document image,
@@ -218,7 +370,7 @@ def get_openrouter_status(user: dict = Depends(get_current_user)):
     return openrouter_gemini_adapter.get_status()
 
 @router.post("/openrouter-enhance")
-def openrouter_enhance_document(request: OpenRouterEnhanceRequest, user: dict = Depends(get_current_user)):
+def openrouter_enhance_document(request: OpenRouterEnhanceRequest, user: dict = Depends(require_permission(Permission.RESTORATION_RUN))):
     """
     Restore document image using Google Gemini Nano Banana 2.1 via OpenRouter Image API.
     Sends source document as input reference and generates master archival restoration.
@@ -306,7 +458,7 @@ def get_google_ai_studio_status(user: dict = Depends(get_current_user)):
     return google_ai_studio_adapter.get_status()
 
 @router.post("/google-ai-studio-enhance")
-def google_ai_studio_enhance_document(request: GoogleAIStudioEnhanceRequest, user: dict = Depends(get_current_user)):
+def google_ai_studio_enhance_document(request: GoogleAIStudioEnhanceRequest, user: dict = Depends(require_permission(Permission.RESTORATION_RUN))):
     """
     Direct restoration via Google AI Studio API (Gemini Nano Banana 2.1 / Gemini 2.5 Flash).
     Communicates directly with Google Generative Language endpoints.

@@ -6,3 +6,9 @@ class OCRSaveRequest(BaseModel):
     corrected_text: str
     notes: Optional[str] = None
 
+class OCRExtractRequest(BaseModel):
+    document_id: str
+    use_restored: Optional[bool] = True
+    force_rescan: Optional[bool] = False
+
+

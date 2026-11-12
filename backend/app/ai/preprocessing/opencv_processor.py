@@ -8,6 +8,41 @@ class OpenCVProcessor:
 
     @staticmethod
     def load_image(image_path: str) -> np.ndarray:
+        p = Path(image_path)
+        if p.suffix.lower() == ".pdf":
+            # Render page 1 of PDF at 200–300 DPI (scale ~3.0)
+            try:
+                import pypdfium2 as pdfium
+                pdf = pdfium.PdfDocument(image_path)
+                if len(pdf) > 0:
+                    page = pdf[0]
+                    pil_img = page.render(scale=3.0).to_pil()
+                    return cv2.cvtColor(np.array(pil_img.convert("RGB")), cv2.COLOR_RGB2BGR)
+            except Exception:
+                pass
+
+            try:
+                from pdf2image import convert_from_path
+                pages = convert_from_path(image_path, dpi=216, first_page=1, last_page=1)
+                if pages:
+                    return cv2.cvtColor(np.array(pages[0].convert("RGB")), cv2.COLOR_RGB2BGR)
+            except Exception:
+                pass
+
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(image_path)
+                if len(reader.pages) > 0 and len(reader.pages[0].images) > 0:
+                    img_bytes = reader.pages[0].images[0].data
+                    img_arr = np.frombuffer(img_bytes, dtype=np.uint8)
+                    decoded = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
+                    if decoded is not None:
+                        return decoded
+            except Exception:
+                pass
+
+            raise ValueError(f"Could not render or decode PDF document at {image_path}")
+
         # Load preserving UTF-8 Windows paths
         data = np.fromfile(image_path, dtype=np.uint8)
         img = cv2.imdecode(data, cv2.IMREAD_COLOR)
@@ -164,6 +199,29 @@ class OpenCVProcessor:
         )
         return binary
 
+    @staticmethod
+    def sauvola_threshold(img: np.ndarray, window_size: int = 25, k: float = 0.2) -> np.ndarray:
+        """
+        Sauvola adaptive thresholding tailored for degraded historical parchment.
+        T = m * (1 + k * (s / 128 - 1))
+        """
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img.copy()
+        try:
+            from skimage.filters import threshold_sauvola
+            thresh = threshold_sauvola(gray, window_size=window_size, k=k)
+            binary = ((gray > thresh) * 255).astype(np.uint8)
+            return cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR) if len(img.shape) == 3 else binary
+        except Exception:
+            win = window_size if window_size % 2 == 1 else window_size + 1
+            gray_f = gray.astype(np.float32)
+            mean = cv2.blur(gray_f, (win, win))
+            mean_sq = cv2.blur(gray_f * gray_f, (win, win))
+            variance = np.maximum(mean_sq - mean * mean, 0)
+            std = np.sqrt(variance)
+            thresh = mean * (1.0 + k * (std / 128.0 - 1.0))
+            binary = np.where(gray_f > thresh, 255, 0).astype(np.uint8)
+            return cv2.cvtColor(binary, cv2.COLOR_GRAY2BGR) if len(img.shape) == 3 else binary
+
     def process_pipeline(
         self,
         input_path: str,
@@ -171,7 +229,8 @@ class OpenCVProcessor:
         do_deskew: bool = True,
         do_clahe: bool = True,
         do_denoise: bool = True,
-        do_clean_paper: bool = True
+        do_clean_paper: bool = True,
+        do_sauvola: bool = False
     ) -> Dict[str, Any]:
         """Execute full OpenCV document restoration pipeline."""
         img = self.load_image(input_path)
@@ -185,6 +244,8 @@ class OpenCVProcessor:
             img = self.denoise(img)
         if do_clahe:
             img = self.apply_clahe(img)
+        if do_sauvola:
+            img = self.sauvola_threshold(img)
             
         self.save_image(img, output_path)
         (h, w) = img.shape[:2]
@@ -197,7 +258,8 @@ class OpenCVProcessor:
                 "deskew": do_deskew,
                 "clean_paper": do_clean_paper,
                 "denoise": do_denoise,
-                "clahe": do_clahe
+                "clahe": do_clahe,
+                "sauvola": do_sauvola
             }
         }
 

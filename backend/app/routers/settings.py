@@ -2,13 +2,14 @@ import os
 import torch
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
-from backend.app.core.dependencies import get_current_user, require_role
-from backend.app.core.permissions import Role
+from backend.app.core.dependencies import get_current_user, require_role, require_permission
+from backend.app.core.permissions import Role, Permission
 from backend.app.core.config import settings
 from backend.app.database.repositories.settings_repo import SettingsRepository
 from backend.app.database.repositories.audit_repo import AuditRepository
 from backend.app.database.mongodb import get_db_status
 from backend.app.ai.enhancement.realesrgan_adapter import realesrgan_adapter
+from backend.app.ai.enhancement.gfpgan_adapter import gfpgan_adapter
 from backend.app.ai.inpainting.lama_adapter import lama_adapter
 from backend.app.ai.ocr.paddleocr_adapter import paddleocr_adapter
 
@@ -17,7 +18,8 @@ settings_repo = SettingsRepository()
 audit_repo = AuditRepository()
 
 @router.get("")
-def get_system_settings(user: dict = Depends(get_current_user)):
+@router.get("/system")
+def get_system_settings(user: dict = Depends(require_permission(Permission.SETTINGS_MANAGE))):
     stored = settings_repo.get_all()
     
     # Defaults merged with stored settings
@@ -40,6 +42,7 @@ def get_system_settings(user: dict = Depends(get_current_user)):
         },
         "models_status": {
             "realesrgan": realesrgan_adapter.get_status(),
+            "gfpgan": gfpgan_adapter.get_status(),
             "lama": lama_adapter.get_status(),
             "paddleocr": paddleocr_adapter.get_status()
         },
@@ -62,7 +65,8 @@ def get_system_settings(user: dict = Depends(get_current_user)):
     return defaults
 
 @router.post("")
-def update_system_settings(payload: Dict[str, Any], user: dict = Depends(require_role([Role.ADMIN]))):
+@router.put("/system")
+def update_system_settings(payload: Dict[str, Any], user: dict = Depends(require_permission(Permission.SETTINGS_MANAGE))):
     for key, val in payload.items():
         settings_repo.set_value(key, val, updated_by=user["_id"])
         

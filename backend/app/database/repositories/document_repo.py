@@ -113,3 +113,34 @@ class DocumentRepository:
         sync_disk_if_mock()
         return res.modified_count > 0
 
+    def delete(self, document_id: str) -> bool:
+        """Permanently delete document and cascading records from MongoDB."""
+        query = {"document_id": document_id}
+        doc = self.collection.find_one(query)
+        if not doc and ObjectId.is_valid(document_id):
+            query = {"_id": ObjectId(document_id)}
+            doc = self.collection.find_one(query)
+        if not doc:
+            doc = self.collection.find_one({"_id": document_id})
+            if doc:
+                query = {"_id": document_id}
+            else:
+                return False
+
+        actual_doc_id = doc.get("document_id") or str(doc.get("_id"))
+        res = self.collection.delete_one(query)
+
+        # Remove associated cascading records from collections in DB
+        db = get_db()
+        try:
+            db.document_versions.delete_many({"document_id": actual_doc_id})
+            db.ocr_results.delete_many({"document_id": actual_doc_id})
+            db.damage_analyses.delete_many({"document_id": actual_doc_id})
+            db.reviews.delete_many({"document_id": actual_doc_id})
+            db.restoration_jobs.delete_many({"document_id": actual_doc_id})
+        except Exception:
+            pass
+
+        sync_disk_if_mock()
+        return res.deleted_count > 0
+

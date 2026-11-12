@@ -2,19 +2,31 @@ import os
 import torch
 import cv2
 import numpy as np
+import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
 from backend.app.core.config import settings, MODELS_DIR
 from backend.app.ai.preprocessing.opencv_processor import opencv_processor
 
+logger = logging.getLogger("archivegov.realesrgan")
+
 class RealESRGANAdapter:
     """
     Adapter for Real-ESRGAN super-resolution model.
-    Supports CUDA GPU acceleration and high-fidelity fallback.
+    Supports CUDA GPU acceleration, tiled inference, and high-fidelity fallback.
     """
     def __init__(self):
         self.weights_dir = MODELS_DIR / "realesrgan"
-        self.weights_file = self.weights_dir / "RealESRGAN_x4plus.pth"
+        model_path = getattr(settings, "REALESRGAN_MODEL_PATH", None)
+        if model_path and Path(model_path).exists():
+            self.weights_file = Path(model_path)
+        elif Path("models/checkpoints/RealESRGAN_x4plus.pth").exists():
+            self.weights_file = Path("models/checkpoints/RealESRGAN_x4plus.pth")
+        elif (MODELS_DIR / "checkpoints" / "RealESRGAN_x4plus.pth").exists():
+            self.weights_file = MODELS_DIR / "checkpoints" / "RealESRGAN_x4plus.pth"
+        else:
+            self.weights_file = self.weights_dir / "RealESRGAN_x4plus.pth"
+
         self.device = torch.device(settings.DEVICE if torch.cuda.is_available() and settings.DEVICE == "cuda" else "cpu")
         self.model = None
         self._check_model_availability()
@@ -61,8 +73,89 @@ class RealESRGANAdapter:
         }
 
     def _run_neural_esrgan(self, img: np.ndarray, scale: float) -> np.ndarray:
-        # Placeholder for direct torch state_dict invocation if weights exist
-        return self._run_high_fidelity_fallback(img, scale)
+        """
+        Tiled PyTorch neural inference (tile size 512, tile_pad 10) to prevent CUDA/system OOM,
+        falling back gracefully to OpenCV high-fidelity fallback.
+        """
+        try:
+            device = torch.device("cuda" if torch.cuda.is_available() and settings.DEVICE == "cuda" else "cpu")
+            try:
+                from basicsr.archs.rrdbnet_arch import RRDBNet
+                from realesrgan import RealESRGANer
+                model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
+                upsampler = RealESRGANer(
+                    scale=4,
+                    model_path=str(self.weights_file),
+                    model=model,
+                    tile=512,
+                    tile_pad=10,
+                    pre_pad=0,
+                    half=torch.cuda.is_available(),
+                    device=device
+                )
+                output, _ = upsampler.enhance(img, outscale=scale)
+                return output
+            except Exception:
+                pass
+
+            if self.weights_file.exists():
+                try:
+                    model = torch.jit.load(str(self.weights_file), map_location=device)
+                    model.eval()
+                    h, w, c = img.shape
+                    tile_size = 512
+                    tile_pad = 10
+                    outscale = int(round(scale)) if scale >= 1 else 1
+
+                    out_h = int(round(h * scale))
+                    out_w = int(round(w * scale))
+                    output = np.zeros((out_h, out_w, c), dtype=np.uint8)
+
+                    tiles_x = int(np.ceil(w / tile_size))
+                    tiles_y = int(np.ceil(h / tile_size))
+
+                    for y in range(tiles_y):
+                        for x in range(tiles_x):
+                            x_start = x * tile_size
+                            y_start = y * tile_size
+                            x_end = min(x_start + tile_size, w)
+                            y_end = min(y_start + tile_size, h)
+
+                            x_pad_start = max(0, x_start - tile_pad)
+                            y_pad_start = max(0, y_start - tile_pad)
+                            x_pad_end = min(w, x_end + tile_pad)
+                            y_pad_end = min(h, y_end + tile_pad)
+
+                            tile = img[y_pad_start:y_pad_end, x_pad_start:x_pad_end]
+                            tile_rgb = cv2.cvtColor(tile, cv2.COLOR_BGR2RGB)
+                            t_input = torch.from_numpy(tile_rgb).permute(2, 0, 1).unsqueeze(0).float() / 255.0
+                            t_input = t_input.to(device)
+
+                            with torch.no_grad():
+                                t_out = model(t_input)
+
+                            out_tile = t_out[0].permute(1, 2, 0).detach().cpu().numpy()
+                            out_tile = np.clip(out_tile * 255.0, 0, 255).astype(np.uint8)
+                            out_tile_bgr = cv2.cvtColor(out_tile, cv2.COLOR_RGB2BGR)
+
+                            pad_left = (x_start - x_pad_start) * outscale
+                            pad_top = (y_start - y_pad_start) * outscale
+                            w_tile = (x_end - x_start) * outscale
+                            h_tile = (y_end - y_start) * outscale
+
+                            out_y_start = y_start * outscale
+                            out_x_start = x_start * outscale
+                            output[out_y_start:out_y_start + h_tile, out_x_start:out_x_start + w_tile] = \
+                                out_tile_bgr[pad_top:pad_top + h_tile, pad_left:pad_left + w_tile]
+
+                    return output
+                except Exception:
+                    pass
+
+            return self._run_high_fidelity_fallback(img, scale)
+        except Exception as e:
+            logger.warning(f"RealESRGAN neural inference note: {e}")
+            return self._run_high_fidelity_fallback(img, scale)
 
     def _run_high_fidelity_fallback(self, img: np.ndarray, scale: float) -> np.ndarray:
         """

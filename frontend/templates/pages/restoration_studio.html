@@ -534,6 +534,80 @@
         </div>
       </div>
 
+      <!-- GFPGAN Face & Portrait Restorer Studio Control -->
+      <div class="bg-surface-container-low/95 rounded-2xl border border-emerald-500/40 p-space-lg shadow-2xl flex flex-col gap-space-sm relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-emerald-400 text-[22px]">face</span>
+            <div>
+              <h3 class="font-headline-sm text-sm text-on-surface font-bold">GFPGAN Face & Portrait Restorer</h3>
+              <p class="font-mono text-[10px] text-emerald-400">TencentARC • Generative Facial Prior (GFPGANv1.4)</p>
+            </div>
+          </div>
+          <button 
+            id="toggleGfpganConfig" 
+            type="button" 
+            class="text-xs text-on-surface-variant hover:text-emerald-400 p-1 rounded-md hover:bg-surface-container-high transition-colors"
+            title="Toggle Parameters"
+          >
+            <span class="material-symbols-outlined text-[18px]">tune</span>
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-2.5 text-xs font-mono">
+          <!-- Quick Parameters Grid -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-on-surface-variant mb-1">Face Upscale Factor</label>
+              <select id="gfpganUpscale" class="w-full bg-surface-container-high rounded-lg px-2.5 py-1.5 text-xs text-on-surface border border-outline-variant/40 focus:border-emerald-400 outline-none">
+                <option value="2" selected>2x Super-Resolution</option>
+                <option value="4">4x Ultra-High Definition</option>
+                <option value="1">1x (Face Restoration Only)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-on-surface-variant mb-1">Face Fidelity Weight (<span id="gfpWeightVal">0.5</span>)</label>
+              <input 
+                type="range" 
+                id="gfpganWeight" 
+                min="0.10" 
+                max="1.00" 
+                step="0.05" 
+                value="0.50" 
+                class="w-full accent-emerald-400 cursor-pointer mt-1"
+                oninput="document.getElementById('gfpWeightVal').textContent = this.value"
+              />
+            </div>
+          </div>
+
+          <!-- Advanced Collapsible Parameters -->
+          <div id="gfpganAdvancedSection" class="hidden flex-col gap-2 pt-2 border-t border-outline-variant/20">
+            <div class="flex items-center justify-between p-2 rounded-lg bg-surface-container-high border border-outline-variant/40">
+              <div>
+                <span class="block text-xs font-semibold text-on-surface">Center Face Only</span>
+                <span class="text-[10px] text-on-surface-variant">Focus exclusively on primary center portrait</span>
+              </div>
+              <input type="checkbox" id="gfpganCenterOnly" class="accent-emerald-400 h-4 w-4 rounded cursor-pointer" />
+            </div>
+            <div class="p-2 rounded-lg bg-surface-container border border-outline-variant/30 text-[11px] text-slate-400">
+              <span class="text-emerald-400 font-semibold">Specialized for:</span> Degraded archival portraits, identity cards, deed photos, royal emblems, and colonial administrative headshots.
+            </div>
+          </div>
+
+          <!-- GFPGAN Instant Action Button -->
+          <button 
+            id="btnRunGFPGAN" 
+            type="button" 
+            class="w-full py-3 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 font-mono text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(16,185,129,0.2)] mt-1"
+          >
+            <span class="material-symbols-outlined text-[18px]">face_retouching_natural</span>
+            <span>Restore Faces & Upscale (GFPGAN)</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Quick Specialized Studio Links -->
       <div class="bg-surface-container-low/90 rounded-2xl border border-outline-variant/30 p-space-md shadow-xl flex flex-col gap-2">
         <span class="font-mono text-[11px] text-slate-400 uppercase tracking-wider mb-1">Specialized Studios</span>
@@ -867,6 +941,82 @@
       } finally {
         btnRunGeminiNano.disabled = false;
         btnRunGeminiNano.innerHTML = `<span class="material-symbols-outlined text-[18px]">temp_preferences_custom</span> <span>Restore with Gemini Nano 2.1</span>`;
+      }
+    });
+  }
+
+  // 4.c GFPGAN Face & Portrait Restorer Controller
+  const toggleGfpBtn = document.getElementById('toggleGfpganConfig');
+  const gfpAdvancedSec = document.getElementById('gfpganAdvancedSection');
+  const btnRunGFPGAN = document.getElementById('btnRunGFPGAN');
+
+  if (toggleGfpBtn && gfpAdvancedSec) {
+    toggleGfpBtn.addEventListener('click', () => {
+      gfpAdvancedSec.classList.toggle('hidden');
+      gfpAdvancedSec.classList.toggle('flex');
+    });
+  }
+
+  if (btnRunGFPGAN) {
+    btnRunGFPGAN.addEventListener('click', async () => {
+      btnRunGFPGAN.disabled = true;
+      btnRunGFPGAN.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Restoring with GFPGAN...`;
+      Toast.info('Detecting and restoring facial features with GFPGANv1.4...', 'Generative Prior Active');
+
+      try {
+        const payload = {
+          document_id: docId,
+          upscale: parseInt(document.getElementById('gfpganUpscale')?.value || 2),
+          weight: parseFloat(document.getElementById('gfpganWeight')?.value || 0.5),
+          only_center_face: document.getElementById('gfpganCenterOnly')?.checked || false
+        };
+
+        const res = await API.post('/api/v1/restoration/gfpgan-enhance', payload);
+
+        if (res.success && res.file_url) {
+          const freshUrl = `${res.file_url}?t=${Date.now()}`;
+          const imgRest = document.getElementById('imgRestored');
+          const sideRest = document.getElementById('sideImgRestored');
+          if (imgRest) imgRest.src = freshUrl;
+          if (sideRest) sideRest.src = freshUrl;
+
+          // Smoothly animate divider to 25% for instant visual feedback
+          if (overlay && divider) {
+            overlay.style.transition = 'width 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
+            divider.style.transition = 'left 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
+            overlay.style.width = '25%';
+            divider.style.left = 'calc(25% - 14px)';
+            if (innerWrapper) {
+              innerWrapper.style.transition = 'width 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
+              innerWrapper.style.width = `${(1 / 0.25) * 100}%`;
+            }
+            setTimeout(() => {
+              overlay.style.transition = '';
+              divider.style.transition = '';
+              if (innerWrapper) innerWrapper.style.transition = '';
+            }, 750);
+          }
+
+          const stage3 = document.getElementById('stage-realesrgan');
+          if (stage3) {
+            const icon = stage3.querySelector('.stage-icon');
+            const badge = stage3.querySelector('.stage-badge');
+            if (icon) { icon.className = 'material-symbols-outlined text-emerald-400 text-[18px] stage-icon'; icon.textContent = 'check_circle'; }
+            if (badge) { badge.className = 'text-emerald-400 text-[11px] font-semibold stage-badge'; badge.textContent = 'Restored (GFPGAN)'; }
+          }
+
+          const facesMsg = res.metrics?.faces_detected 
+            ? ` (${res.metrics.faces_detected} face${res.metrics.faces_detected > 1 ? 's' : ''} restored)` 
+            : '';
+          Toast.success(`Portrait enhanced and upscaled${facesMsg}! Drag slider or inspect Side-by-Side.`, 'GFPGAN Enhanced');
+        } else {
+          Toast.error(res.detail || 'GFPGAN face restoration encountered an issue.', 'Enhancement Note');
+        }
+      } catch (err) {
+        Toast.error(err.message || 'GFPGAN face restoration failed.', 'Enhancement Error');
+      } finally {
+        btnRunGFPGAN.disabled = false;
+        btnRunGFPGAN.innerHTML = `<span class="material-symbols-outlined text-[18px]">face_retouching_natural</span> <span>Restore Faces & Upscale (GFPGAN)</span>`;
       }
     });
   }

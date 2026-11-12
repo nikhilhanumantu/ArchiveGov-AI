@@ -41,6 +41,10 @@
         <span class="material-symbols-outlined text-[16px]">history_toggle_off</span>
         <span>History</span>
       </a>
+      <button id="btnDeleteRecordDetails" class="px-3.5 py-2 rounded-xl bg-error/15 hover:bg-error/25 text-error border border-error/30 text-xs font-mono font-semibold flex items-center gap-1.5 transition-all" title="Delete Record">
+        <span class="material-symbols-outlined text-[16px]">delete</span>
+        <span>Delete Record</span>
+      </button>
     </div>
   </div>
 
@@ -168,6 +172,39 @@
       </div>
     </div>
   </div>
+
+  <!-- Sovereign Delete Confirmation Modal -->
+  <div id="deleteConfirmModal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-all">
+    <div class="relative w-full max-w-md bg-surface-container-low border border-error/50 rounded-2xl shadow-2xl p-6 flex flex-col gap-4 animate-scaleUp">
+      <div class="flex items-center gap-3 text-error">
+        <div class="w-10 h-10 rounded-xl bg-error/15 border border-error/30 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px]">delete_forever</span>
+        </div>
+        <div>
+          <h3 class="font-headline-sm text-base font-bold text-white">Permanently Delete Record?</h3>
+          <p class="font-mono text-[11px] text-error/80 uppercase tracking-wider">Irreversible Database Action</p>
+        </div>
+      </div>
+
+      <div class="p-3.5 rounded-xl bg-surface-container-lowest border border-outline-variant/30 text-xs text-on-surface-variant flex flex-col gap-1.5">
+        <span class="font-semibold text-white truncate">{{ document.title }}</span>
+        <span class="font-mono text-[11px] text-secondary">{{ document.document_id }} • {{ document.archive_reference_id }}</span>
+        <p class="text-outline text-[11px] mt-1 leading-relaxed">
+          This will permanently purge this record, its restoration versions, damage telemetry, and extracted OCR text from the MongoDB repository.
+        </p>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-surface-container-highest/60">
+        <button id="cancelDeleteBtn" type="button" class="px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-mono font-medium transition-all">
+          Cancel
+        </button>
+        <button id="confirmDeleteBtn" type="button" class="px-4 py-2 rounded-xl bg-error hover:bg-error/90 text-on-error text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-error/20 transition-all">
+          <span class="material-symbols-outlined text-[16px]">delete</span>
+          <span id="confirmDeleteBtnText">Delete from Database</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -202,6 +239,54 @@
       } catch (err) {
         commitBtn.disabled = false;
         Toast.error(err.message);
+      }
+    });
+  }
+
+  // Delete Record Handling
+  const btnDelete = document.getElementById('btnDeleteRecordDetails');
+  const deleteModal = document.getElementById('deleteConfirmModal');
+  const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+  const confirmDeleteBtnText = document.getElementById('confirmDeleteBtnText');
+
+  if (btnDelete && deleteModal) {
+    btnDelete.addEventListener('click', () => {
+      deleteModal.classList.remove('hidden');
+      deleteModal.classList.add('flex');
+    });
+  }
+
+  if (cancelDeleteBtn && deleteModal) {
+    cancelDeleteBtn.addEventListener('click', () => {
+      deleteModal.classList.add('hidden');
+      deleteModal.classList.remove('flex');
+    });
+  }
+
+  if (deleteModal) {
+    deleteModal.addEventListener('click', (e) => {
+      if (e.target === deleteModal) {
+        deleteModal.classList.add('hidden');
+        deleteModal.classList.remove('flex');
+      }
+    });
+  }
+
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', async () => {
+      confirmDeleteBtn.disabled = true;
+      if (confirmDeleteBtnText) confirmDeleteBtnText.textContent = 'Purging from DB...';
+      try {
+        const res = await API.delete('/api/v1/documents/{{ document.document_id }}');
+        Toast.success(res.message || 'Archival record deleted from database.', 'Record Purged');
+        setTimeout(() => {
+          window.location.href = '/app/archive';
+        }, 800);
+      } catch (err) {
+        confirmDeleteBtn.disabled = false;
+        if (confirmDeleteBtnText) confirmDeleteBtnText.textContent = 'Delete from Database';
+        Toast.error(err.message || 'Failed to delete record from database.');
       }
     });
   }

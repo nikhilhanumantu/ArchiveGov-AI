@@ -95,5 +95,19 @@ class LocalStorage:
         shutil.copy2(src_path, dest_path)
         return new_key, str(dest_path)
 
+    def delete_file(self, file_path_or_key, category: Optional[str] = None) -> bool:
+        """Safely delete file from disk if present."""
+        try:
+            if isinstance(file_path_or_key, Path):
+                p = file_path_or_key
+            else:
+                p = self.resolve_path(str(file_path_or_key), category)
+            if p and p.exists() and p.is_file():
+                p.unlink(missing_ok=True)
+                return True
+        except Exception:
+            pass
+        return False
+
 storage = LocalStorage()
 

@@ -2,6 +2,7 @@ import uuid
 import pypdf
 import shutil
 import logging
+from pathlib import Path
 from typing import Optional, List
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status
 from backend.app.core.dependencies import get_current_user, require_permission
@@ -35,10 +36,26 @@ async def upload_document(
     language: str = Form("English & Tamil Vernacular"),
     archive_reference_id: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission(Permission.DOCUMENT_CREATE))
 ):
     # 1. Save uploaded file to originals
     file_key, file_path, file_size, checksum = storage.save_upload(file)
+    
+    # Check for PDF and rasterize page 1 to high-resolution PNG
+    is_pdf = Path(file_key).suffix.lower() == ".pdf" or (bool(file.content_type) and "pdf" in file.content_type.lower())
+    pdf_file_key = None
+    if is_pdf:
+        pdf_file_key = file_key
+        rasterized_stem = Path(file_key).stem
+        rasterized_key = f"{rasterized_stem}_page1.png"
+        rasterized_path = storage.originals / rasterized_key
+        try:
+            page1_img = opencv_processor.load_image(str(file_path))
+            opencv_processor.save_image(page1_img, str(rasterized_path))
+            file_key = rasterized_key
+            file_path = rasterized_path
+        except Exception as e:
+            logger.warning(f"PDF rasterization exception: {e}")
     
     # Check for duplicate
     existing_duplicate = doc_repo.find_by_checksum(checksum)
@@ -100,6 +117,8 @@ async def upload_document(
         "uploader_name": user.get("name", "Archive Officer"),
         "assigned_reviewer": None
     }
+    if pdf_file_key:
+        doc_data["pdf_file_key"] = pdf_file_key
     created_doc = doc_repo.create(doc_data)
     
     # 6. Create Versions V1.0 (Original Upload) and V1.1 (AI Restored)
@@ -110,10 +129,11 @@ async def upload_document(
         "parent_version_id": None,
         "version_type": "original",
         "file_key": file_key,
+        "pdf_file_key": pdf_file_key,
         "model_used": "Raw Archival Scan (Unmodified Ingestion)",
         "parameters": {"checksum": checksum, "file_size_bytes": file_size},
         "created_by": user["_id"],
-        "notes": "Immutable original master archival upload."
+        "notes": "Immutable original master archival upload with page 1 rasterization." if pdf_file_key else "Immutable original master archival upload."
     })
 
     v1_1 = version_repo.create({
@@ -223,17 +243,44 @@ def update_document(document_id: str, input_data: DocumentUpdateInput, user: dic
     return updated
 
 @router.delete("/{document_id}")
-def delete_document(document_id: str, user: dict = Depends(get_current_user)):
-    # Soft delete
-    success = doc_repo.soft_delete(document_id)
-    if not success:
+def delete_document(document_id: str, user: dict = Depends(require_permission(Permission.DOCUMENT_DELETE))):
+    from bson import ObjectId
+    doc = doc_repo.find_by_id(document_id)
+    if not doc:
+        doc = doc_repo.collection.find_one({"document_id": document_id})
+        if not doc and ObjectId.is_valid(document_id):
+            doc = doc_repo.collection.find_one({"_id": ObjectId(document_id)})
+            
+    if not doc:
         raise HTTPException(status_code=404, detail="Archival record not found.")
-        
+
+    doc_id = doc.get("document_id", document_id)
+    title = doc.get("title", doc_id)
+
+    # Permanently delete record from DB and all associated collection lineages
+    success = doc_repo.delete(doc_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Failed to delete archival record from database.")
+
+    # Clean up physical files from disk
+    try:
+        if doc.get("original_file_key"):
+            storage.delete_file(doc["original_file_key"], category="originals")
+        if doc.get("restored_file_key"):
+            storage.delete_file(doc["restored_file_key"], category="restored")
+    except Exception as e:
+        logger.warning(f"File cleanup note for deleted doc {doc_id}: {e}")
+
     audit_repo.log(
         user_id=user["_id"],
-        action="DOCUMENT_ARCHIVE_DELETED",
+        action="DOCUMENT_DELETED",
         resource_type="document",
-        resource_id=document_id
+        resource_id=doc_id,
+        metadata={"title": title, "deleted_by": user.get("name")}
     )
-    return {"message": "Document moved to restricted archival trash."}
+    return {
+        "success": True,
+        "message": f"Archival record '{title}' ({doc_id}) successfully deleted from database.",
+        "deleted_document_id": doc_id
+    }
 

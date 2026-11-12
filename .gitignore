@@ -35,12 +35,17 @@ npm-debug.log*
 yarn-debug.log*
 
 # AI Checkpoint binaries (stored/downloaded separately)
-ai_models/*.pth
-ai_models/*.pt
-ai_models/*.bin
-ai_models/*.onnx
+*.pth
+*.pt
+*.bin
+*.onnx
+ai_models/**/*.pth
+ai_models/**/*.pt
+ai_models/**/*.bin
+ai_models/**/*.onnx
 backend/weights/*.pth
 backend/weights/*.pt
+gfpgan/
 
 # Operating System Files
 .DS_Store
@@ -52,4 +57,17 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+
+# Uploaded archival assets (preserve folder structure via .gitkeep)
+uploads/originals/*
+!uploads/originals/.gitkeep
+uploads/working/*
+!uploads/working/.gitkeep
+uploads/restored/*
+!uploads/restored/.gitkeep
+uploads/masks/*
+!uploads/masks/.gitkeep
+uploads/exports/*
+!uploads/exports/.gitkeep
+
 

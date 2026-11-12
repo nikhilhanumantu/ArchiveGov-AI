@@ -18,11 +18,16 @@ def get_reviews(document_id: str, user: dict = Depends(get_current_user)):
     reviews = review_repo.find_by_document_id(document_id)
     return reviews
 
+@router.post("/approve/{document_id}")
+def approve_restoration(document_id: str, user: dict = Depends(require_permission(Permission.RESTORATION_APPROVE))):
+    decision_input = ReviewDecisionInput(decision="approve", comments="Approved via archival sign-off.")
+    return submit_review_decision(document_id=document_id, decision_input=decision_input, user=user)
+
 @router.post("/{document_id}/decision")
 def submit_review_decision(
     document_id: str,
     decision_input: ReviewDecisionInput,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(require_permission(Permission.RESTORATION_APPROVE))
 ):
     # Only Reviewer and Admin can approve/reject
     if user.get("role") not in [Role.REVIEWER.value, Role.ADMIN.value]:

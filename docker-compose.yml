@@ -19,6 +19,8 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DATABASE_NAME=archivegov_db
       - MONGO_URI=mongodb://mongodb:27017
       - MONGO_DB_NAME=archivegov_db
       - ENV=production

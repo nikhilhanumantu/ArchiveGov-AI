@@ -1,7 +1,8 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from backend.app.schemas.restoration import InpaintingRequest
-from backend.app.core.dependencies import get_current_user
+from backend.app.core.dependencies import get_current_user, require_permission
+from backend.app.core.permissions import Permission
 from backend.app.database.repositories.document_repo import DocumentRepository
 from backend.app.database.repositories.version_repo import DocumentVersionRepository
 from backend.app.database.repositories.audit_repo import AuditRepository
@@ -14,7 +15,8 @@ version_repo = DocumentVersionRepository()
 audit_repo = AuditRepository()
 
 @router.post("/apply")
-def apply_selective_inpainting(request: InpaintingRequest, user: dict = Depends(get_current_user)):
+@router.post("/lama")
+def apply_selective_inpainting(request: InpaintingRequest, user: dict = Depends(require_permission(Permission.INPAINT_RUN))):
     doc = doc_repo.find_by_id(request.document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")

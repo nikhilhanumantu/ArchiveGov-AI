@@ -3,10 +3,13 @@ import torch
 import cv2
 import numpy as np
 import base64
+import logging
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 from backend.app.core.config import settings, MODELS_DIR
 from backend.app.ai.preprocessing.opencv_processor import opencv_processor
+
+logger = logging.getLogger("archivegov.lama")
 
 class LaMaInpaintingAdapter:
     """
@@ -15,7 +18,16 @@ class LaMaInpaintingAdapter:
     """
     def __init__(self):
         self.weights_dir = MODELS_DIR / "lama"
-        self.weights_file = self.weights_dir / "big-lama.pt"
+        model_path = getattr(settings, "LAMA_MODEL_PATH", None)
+        if model_path and Path(model_path).exists():
+            self.weights_file = Path(model_path)
+        elif Path("models/checkpoints/big-lama.pt").exists():
+            self.weights_file = Path("models/checkpoints/big-lama.pt")
+        elif (MODELS_DIR / "checkpoints" / "big-lama.pt").exists():
+            self.weights_file = MODELS_DIR / "checkpoints" / "big-lama.pt"
+        else:
+            self.weights_file = self.weights_dir / "big-lama.pt"
+            
         self.device = torch.device(settings.DEVICE if torch.cuda.is_available() and settings.DEVICE == "cuda" else "cpu")
         self._check_availability()
 
@@ -112,7 +124,46 @@ class LaMaInpaintingAdapter:
         return binary_mask
 
     def _run_neural_lama(self, img: np.ndarray, mask: np.ndarray) -> np.ndarray:
-        return self._run_opencv_inpaint(img, mask, 5)
+        try:
+            device = torch.device("cuda" if torch.cuda.is_available() and settings.DEVICE == "cuda" else "cpu")
+            model = torch.jit.load(str(self.weights_file), map_location=device)
+            model.eval()
+
+            orig_h, orig_w = img.shape[:2]
+            # Pad image and mask to multiples of 8
+            pad_h = (8 - orig_h % 8) % 8
+            pad_w = (8 - orig_w % 8) % 8
+
+            # Convert BGR to RGB and float32 [0.0, 1.0]
+            rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            if pad_h > 0 or pad_w > 0:
+                rgb_padded = cv2.copyMakeBorder(rgb, 0, pad_h, 0, pad_w, cv2.BORDER_REFLECT)
+                mask_padded = cv2.copyMakeBorder(mask, 0, pad_h, 0, pad_w, cv2.BORDER_CONSTANT, value=0)
+            else:
+                rgb_padded = rgb
+                mask_padded = mask
+
+            # Normalize to [0.0, 1.0] and format tensors: img: (1, 3, H, W), mask: (1, 1, H, W)
+            img_t = torch.from_numpy(rgb_padded).permute(2, 0, 1).unsqueeze(0).float() / 255.0
+            mask_t = (torch.from_numpy(mask_padded).unsqueeze(0).unsqueeze(0).float() > 0).float()
+
+            img_t = img_t.to(device)
+            mask_t = mask_t.to(device)
+
+            with torch.no_grad():
+                out = model(img_t, mask_t)
+
+            # Convert output tensor back to numpy BGR uint8
+            out_np = out[0].permute(1, 2, 0).detach().cpu().numpy()
+            out_np = np.clip(out_np * 255.0, 0, 255).astype(np.uint8)
+
+            # Unpad
+            out_unpadded = out_np[:orig_h, :orig_w]
+            out_bgr = cv2.cvtColor(out_unpadded, cv2.COLOR_RGB2BGR)
+            return out_bgr
+        except Exception as e:
+            logger.warning(f"TorchScript LaMa neural inference failed, falling back to OpenCV inpainting: {e}")
+            return self._run_opencv_inpaint(img, mask, 5)
 
     def _run_opencv_inpaint(self, img: np.ndarray, mask: np.ndarray, feather: int) -> np.ndarray:
         """High precision multi-stage inpainting with seamless boundary blending."""

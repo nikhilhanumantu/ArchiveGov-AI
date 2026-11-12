@@ -1,8 +1,9 @@
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
-from backend.app.schemas.ocr import OCRSaveRequest
-from backend.app.core.dependencies import get_current_user
+from backend.app.schemas.ocr import OCRSaveRequest, OCRExtractRequest
+from backend.app.core.dependencies import get_current_user, require_permission
+from backend.app.core.permissions import Permission
 from backend.app.database.repositories.document_repo import DocumentRepository
 from backend.app.database.repositories.ocr_repo import OCRRepository
 from backend.app.database.repositories.audit_repo import AuditRepository
@@ -15,8 +16,17 @@ doc_repo = DocumentRepository()
 ocr_repo = OCRRepository()
 audit_repo = AuditRepository()
 
+@router.post("/extract")
+def extract_ocr(request: OCRExtractRequest, user: dict = Depends(require_permission(Permission.OCR_RUN))):
+    return get_ocr_data(
+        document_id=request.document_id,
+        use_restored=bool(request.use_restored),
+        force_rescan=bool(request.force_rescan),
+        user=user
+    )
+
 @router.get("/{document_id}")
-def get_ocr_data(document_id: str, use_restored: bool = True, force_rescan: bool = False, user: dict = Depends(get_current_user)):
+def get_ocr_data(document_id: str, use_restored: bool = True, force_rescan: bool = False, user: dict = Depends(require_permission(Permission.OCR_RUN))):
     doc = doc_repo.find_by_id(document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Archival document not found.")

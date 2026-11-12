@@ -55,6 +55,18 @@ class GoogleAIStudioEnhanceRequest(BaseModel):
     model: Optional[str] = "gemini-nano-banana-2.1"
     api_key: Optional[str] = None
 
+class RealESRGANEnhanceRequest(BaseModel):
+    document_id: str
+    scale: Optional[float] = 2.0
+
+class GFPGANEnhanceRequest(BaseModel):
+    document_id: str
+    upscale: Optional[int] = 2
+    only_center_face: Optional[bool] = False
+    weight: Optional[float] = 0.5
+
+
+
 
 
 

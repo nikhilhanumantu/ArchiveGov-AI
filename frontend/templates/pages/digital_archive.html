@@ -130,6 +130,39 @@
       <tbody id="archiveTableBody" class="divide-y divide-surface-container-highest/40 font-body-sm"></tbody>
     </table>
   </div>
+
+  <!-- Sovereign Delete Confirmation Modal -->
+  <div id="deleteConfirmModal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-all">
+    <div class="relative w-full max-w-md bg-surface-container-low border border-error/50 rounded-2xl shadow-2xl p-6 flex flex-col gap-4 animate-scaleUp">
+      <div class="flex items-center gap-3 text-error">
+        <div class="w-10 h-10 rounded-xl bg-error/15 border border-error/30 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[24px]">delete_forever</span>
+        </div>
+        <div>
+          <h3 class="font-headline-sm text-base font-bold text-white">Permanently Delete Record?</h3>
+          <p class="font-mono text-[11px] text-error/80 uppercase tracking-wider">Irreversible Database Action</p>
+        </div>
+      </div>
+
+      <div class="p-3.5 rounded-xl bg-surface-container-lowest border border-outline-variant/30 text-xs text-on-surface-variant flex flex-col gap-1.5">
+        <span class="font-semibold text-white truncate" id="deleteDocTitleDisplay">Document Title</span>
+        <span class="font-mono text-[11px] text-secondary" id="deleteDocIdDisplay">DOC-ID</span>
+        <p class="text-outline text-[11px] mt-1 leading-relaxed">
+          This will permanently purge this record, its restoration versions, damage telemetry, and extracted OCR text from the MongoDB repository.
+        </p>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-surface-container-highest/60">
+        <button id="cancelDeleteBtn" type="button" class="px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-mono font-medium transition-all">
+          Cancel
+        </button>
+        <button id="confirmDeleteBtn" type="button" class="px-4 py-2 rounded-xl bg-error hover:bg-error/90 text-on-error text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg shadow-error/20 transition-all">
+          <span class="material-symbols-outlined text-[16px]">delete</span>
+          <span id="confirmDeleteBtnText">Delete from Database</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -237,6 +270,9 @@
             <a href="/app/history/${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-slate-300" title="Version Lineage">
               <span class="material-symbols-outlined text-[16px]">history_toggle_off</span>
             </a>
+            <button onclick="requestDeleteRecord('${d.document_id}', '${escapeAttr(d.title)}')" class="p-1.5 rounded-lg bg-surface-container hover:bg-error/20 text-outline hover:text-error transition-all" title="Delete from Database">
+              <span class="material-symbols-outlined text-[16px]">delete</span>
+            </button>
           </div>
         </div>
       </div>
@@ -266,6 +302,9 @@
             <a href="/app/restoration?document_id=${d.document_id}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary" title="Studio">
               <span class="material-symbols-outlined text-[16px]">auto_fix_high</span>
             </a>
+            <button onclick="requestDeleteRecord('${d.document_id}', '${escapeAttr(d.title)}')" class="p-1.5 rounded-lg bg-surface-container hover:bg-error/20 text-outline hover:text-error transition-all" title="Delete from Database">
+              <span class="material-symbols-outlined text-[16px]">delete</span>
+            </button>
           </div>
         </td>
       </tr>
@@ -308,6 +347,79 @@
     gridView.classList.add('hidden');
     tableView.classList.remove('hidden');
   });
+
+  // Delete Record Handling
+  let documentPendingDeletion = null;
+  const deleteModal = document.getElementById('deleteConfirmModal');
+  const deleteDocTitleDisplay = document.getElementById('deleteDocTitleDisplay');
+  const deleteDocIdDisplay = document.getElementById('deleteDocIdDisplay');
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+  const confirmDeleteBtnText = document.getElementById('confirmDeleteBtnText');
+  const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+
+  function escapeAttr(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/'/g, '&#39;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function requestDeleteRecord(docId, docTitle) {
+    documentPendingDeletion = { id: docId, title: docTitle };
+    if (deleteDocTitleDisplay) deleteDocTitleDisplay.textContent = docTitle || docId;
+    if (deleteDocIdDisplay) deleteDocIdDisplay.textContent = docId;
+    if (deleteModal) {
+      deleteModal.classList.remove('hidden');
+      deleteModal.classList.add('flex');
+    }
+  }
+
+  function closeDeleteModal() {
+    if (deleteModal) {
+      deleteModal.classList.add('hidden');
+      deleteModal.classList.remove('flex');
+    }
+    documentPendingDeletion = null;
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.disabled = false;
+    }
+    if (confirmDeleteBtnText) {
+      confirmDeleteBtnText.textContent = 'Delete from Database';
+    }
+  }
+
+  if (cancelDeleteBtn) {
+    cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+  }
+  if (deleteModal) {
+    deleteModal.addEventListener('click', (e) => {
+      if (e.target === deleteModal) closeDeleteModal();
+    });
+  }
+
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', async () => {
+      if (!documentPendingDeletion) return;
+      const docId = documentPendingDeletion.id;
+      confirmDeleteBtn.disabled = true;
+      if (confirmDeleteBtnText) confirmDeleteBtnText.textContent = 'Purging from DB...';
+
+      try {
+        const res = await API.delete(`/api/v1/documents/${encodeURIComponent(docId)}`);
+        closeDeleteModal();
+        Toast.success(res.message || `Record ${docId} successfully deleted from database.`, 'Record Purged');
+        await loadArchiveData();
+      } catch (err) {
+        console.error('Delete document failed:', err);
+        confirmDeleteBtn.disabled = false;
+        if (confirmDeleteBtnText) confirmDeleteBtnText.textContent = 'Delete from Database';
+        Toast.error(err.message || 'Failed to delete record from database.', 'Deletion Error');
+      }
+    });
+  }
 
   document.addEventListener('DOMContentLoaded', loadArchiveData);
 </script>

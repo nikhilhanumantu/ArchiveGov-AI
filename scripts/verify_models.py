@@ -6,6 +6,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import torch
 from backend.app.ai.enhancement.realesrgan_adapter import realesrgan_adapter
+from backend.app.ai.enhancement.gfpgan_adapter import gfpgan_adapter
 from backend.app.ai.inpainting.lama_adapter import lama_adapter
 from backend.app.ai.ocr.paddleocr_adapter import paddleocr_adapter
 from backend.app.database.mongodb import get_db_status
@@ -20,6 +21,7 @@ def verify():
     print(f"PyTorch Version: {torch.__version__}")
     print("\n--- Model Adapters ---")
     print(f"Real-ESRGAN: {realesrgan_adapter.get_status()}")
+    print(f"GFPGAN (Face Restoration): {gfpgan_adapter.get_status()}")
     print(f"LaMa Inpainting: {lama_adapter.get_status()}")
     print(f"PaddleOCR: {paddleocr_adapter.get_status()}")
     print("\n--- Database Status ---")

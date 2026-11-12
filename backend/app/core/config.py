@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import List, Optional
+from pydantic import Field, AliasChoices
 from pydantic_settings import BaseSettings
 
 # Base directories
@@ -28,8 +29,14 @@ class Settings(BaseSettings):
     COOKIE_NAME: str = "archivegov_session"
     
     # Database (MongoDB)
-    MONGODB_URI: str = "mongodb://127.0.0.1:27017"
-    DATABASE_NAME: str = "archivegov_db"
+    MONGODB_URI: str = Field(
+        default="mongodb://127.0.0.1:27017",
+        validation_alias=AliasChoices("MONGODB_URI", "MONGO_URI")
+    )
+    DATABASE_NAME: str = Field(
+        default="archivegov_db",
+        validation_alias=AliasChoices("DATABASE_NAME", "MONGO_DB_NAME")
+    )
     
     # Storage
     UPLOAD_DIR: str = str(UPLOADS_DIR)
@@ -44,9 +51,14 @@ class Settings(BaseSettings):
     # AI & Compute
     DEVICE: str = "cuda" if os.environ.get("CUDA_VISIBLE_DEVICES") else "cpu"
     ENABLE_REALESRGAN: bool = True
+    ENABLE_GFPGAN: bool = True
+    GFPGAN_MODEL_PATH: str = "ai_models/gfpgan/GFPGANv1.4.pth"
     ENABLE_FINEGRAIN_ENHANCER: bool = True
     FINEGRAIN_SPACE_ID: str = "finegrain/finegrain-image-enhancer"
-    HF_TOKEN: Optional[str] = os.environ.get("HF_TOKEN")
+    HF_TOKEN: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("HF_TOKEN", "HUGGINGFACE_API_TOKEN")
+    )
     
     # OpenRouter Google Gemini Nano Banana 2.1
     OPENROUTER_API_KEY: str = ""
