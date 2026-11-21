@@ -1,7 +1,7 @@
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
-from backend.app.schemas.ocr import OCRSaveRequest, OCRExtractRequest
+from backend.app.schemas.ocr import OCRSaveRequest, OCRExtractRequest, OCRTranslateRequest
 from backend.app.core.dependencies import get_current_user, require_permission
 from backend.app.core.permissions import Permission
 from backend.app.database.repositories.document_repo import DocumentRepository
@@ -10,6 +10,7 @@ from backend.app.database.repositories.audit_repo import AuditRepository
 from backend.app.storage.local_storage import storage
 from backend.app.ai.ocr.paddleocr_adapter import paddleocr_adapter
 from backend.app.ai.ocr.ocr_processor import ocr_exporter
+from backend.app.ai.ocr.entity_extractor import entity_extractor
 
 router = APIRouter(prefix="/api/v1/ocr", tags=["OCR & Text Extraction"])
 doc_repo = DocumentRepository()
@@ -120,4 +121,75 @@ def export_ocr_file(document_id: str, format_type: str, user: dict = Depends(get
 
     file_path = storage.resolve_path(file_key, "exports")
     return FileResponse(path=str(file_path), media_type=media_type, filename=Path(file_path).name)
+
+@router.get("/{document_id}/entities")
+def extract_document_entities(document_id: str, user: dict = Depends(require_permission(Permission.DOCUMENT_VIEW))):
+    """
+    Extract structured legal metadata entities (survey/registry no, holder, land extent, assessment) from OCR.
+    """
+    doc = doc_repo.find_by_id(document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    raw_text = ""
+    ocr_record = ocr_repo.find_by_document_id(document_id)
+    if ocr_record:
+        raw_text = ocr_record.get("corrected_text") or ocr_record.get("extracted_text") or ""
+    if not raw_text:
+        raw_text = doc.get("ocr_text", "") or doc.get("description", "")
+
+    entities = entity_extractor.extract_entities(raw_text, title=doc.get("title", ""))
+
+    # Save onto document record
+    doc_repo.update(document_id, {"extracted_entities": entities})
+
+    audit_repo.log(
+        user_id=user["_id"],
+        action="OCR_ENTITIES_EXTRACTED",
+        resource_type="document",
+        resource_id=document_id
+    )
+
+    return {
+        "success": True,
+        "document_id": document_id,
+        "entities": entities
+    }
+
+@router.post("/{document_id}/translate")
+def translate_document_text(document_id: str, request: OCRTranslateRequest, user: dict = Depends(require_permission(Permission.DOCUMENT_VIEW))):
+    """
+    Translate and modernize historical legal document transcription into Modern English, Telugu, Tamil, or Hindi.
+    """
+    doc = doc_repo.find_by_id(document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    raw_text = getattr(request, "raw_text", None) or ""
+    if not raw_text:
+        ocr_record = ocr_repo.find_by_document_id(document_id)
+        if ocr_record:
+            raw_text = ocr_record.get("corrected_text") or ocr_record.get("extracted_text") or ""
+    if not raw_text:
+        raw_text = doc.get("ocr_text", "") or doc.get("description", "")
+
+    res = entity_extractor.translate_and_modernize(raw_text, target_lang=request.target_language)
+
+    audit_repo.log(
+        user_id=user["_id"],
+        action="OCR_TEXT_TRANSLATED",
+        resource_type="document",
+        resource_id=document_id,
+        metadata={"target_language": request.target_language, "engine_used": res.get("engine_used")}
+    )
+
+    return {
+        "success": True,
+        "document_id": document_id,
+        "translated_text": res["translated_text"],
+        "archaic_glossary": res["archaic_glossary"],
+        "target_language": res["target_language"],
+        "engine_used": res["engine_used"]
+    }
+
 

@@ -13,7 +13,7 @@ MODELS_DIR = BASE_DIR / "ai_models"
 
 class Settings(BaseSettings):
     APP_NAME: str = "ArchiveGov AI"
-    APP_VERSION: str = "2.4.0"
+    APP_VERSION: str = "3.0.0"
     TAGLINE: str = "Reviving Government History with Generative AI"
     ENV: str = "development"
     DEBUG: bool = True
@@ -66,7 +66,10 @@ class Settings(BaseSettings):
     OPENROUTER_IMAGE_MODEL: str = "google/gemini-nano-banana-2.1"
     
     # Google AI Studio / Gemini API
-    GOOGLE_AI_STUDIO_API_KEY: str = ""
+    GOOGLE_AI_STUDIO_API_KEY: str = Field(
+        default="",
+        validation_alias=AliasChoices("GOOGLE_AI_STUDIO_API_KEY", "GEMINI_API_KEY")
+    )
     GOOGLE_AI_STUDIO_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta"
     
     ENABLE_LAMA: bool = True

@@ -54,7 +54,15 @@
     </div>
 
     <!-- Quick Action Controls -->
-    <div class="flex items-center gap-space-sm shrink-0">
+    <div class="flex items-center gap-space-sm shrink-0 flex-wrap">
+      <button class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-tertiary-container/20 hover:bg-tertiary-container/35 border border-tertiary/40 text-tertiary text-xs font-mono font-semibold transition-all shadow-sm" id="btnExtractEntities">
+        <span class="material-symbols-outlined text-[16px]">account_tree</span>
+        <span>Extract Legal Entities</span>
+      </button>
+      <button class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-secondary-container/20 hover:bg-secondary-container/35 border border-secondary/40 text-secondary text-xs font-mono font-semibold transition-all shadow-sm" id="btnOpenTranslate">
+        <span class="material-symbols-outlined text-[16px]">translate</span>
+        <span>Translate / Modernize</span>
+      </button>
       <button class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface text-xs font-mono" id="btnRescanOcr">
         <span class="material-symbols-outlined text-[16px]">sync</span>
         <span>Re-scan Raster</span>
@@ -114,14 +122,18 @@
     <div class="lg:col-span-7 flex flex-col gap-space-md">
       <!-- Editor Card -->
       <div class="bg-surface-container-low/95 rounded-2xl border border-outline-variant/30 p-space-lg shadow-xl flex flex-col gap-space-md">
-        <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-xs">
+        <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-xs flex-wrap gap-2">
           <div class="flex items-center gap-3">
             <span class="font-headline-sm text-sm text-white font-bold">Verified Archival Transcription</span>
             <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono text-[11px] font-bold" id="ocrConfDisplay">
               98.4% Confidence
             </span>
           </div>
-          <div class="flex items-center gap-2 font-mono text-xs text-slate-400">
+          <div class="flex items-center gap-2.5 font-mono text-xs text-slate-400 flex-wrap">
+            <button id="btnListenOcr" type="button" class="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-secondary hover:text-white transition-all cursor-pointer shadow-sm" title="Listen to verified OCR document text">
+              <span class="material-symbols-outlined text-[15px]" id="iconListenOcr">volume_up</span>
+              <span id="textListenOcr">Listen (OCR)</span>
+            </button>
             <span id="wordCountDisplay">128 Words</span>
             <span>•</span>
             <span id="lineCountDisplay">16 Lines</span>
@@ -175,6 +187,61 @@
           </div>
         </div>
       </div>
+
+      <!-- Legal Metadata Entities Card -->
+      <div id="legalEntitiesCard" class="hidden bg-surface-container-low/95 rounded-2xl border border-tertiary/40 p-space-md shadow-xl flex flex-col gap-3 animate-fadeIn">
+        <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-2">
+          <div class="flex items-center gap-2 text-tertiary">
+            <span class="material-symbols-outlined text-[18px]">account_tree</span>
+            <span class="font-headline-sm text-xs font-bold text-white uppercase tracking-wider">Structured Legal Entities & Tenure Metadata</span>
+          </div>
+          <span class="font-mono text-[10px] text-tertiary px-2 py-0.5 rounded-full bg-tertiary/15 border border-tertiary/30">Automated Legal NER</span>
+        </div>
+        <div id="entitiesBadgesGrid" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs font-mono">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <!-- Vernacular Translation & Modernization Card -->
+      <div id="translationCard" class="hidden bg-surface-container-low/95 rounded-2xl border border-secondary/40 p-space-md shadow-xl flex flex-col gap-3 animate-fadeIn">
+        <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-2 flex-wrap gap-2">
+          <div class="flex items-center gap-2 text-secondary">
+            <span class="material-symbols-outlined text-[18px]">translate</span>
+            <span class="font-headline-sm text-xs font-bold text-white uppercase tracking-wider">Modernized Vernacular Translation</span>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <select id="targetLanguageSelect" class="bg-surface-container-high border border-outline-variant/40 text-white text-xs px-2.5 py-1 rounded-lg font-mono focus:outline-none">
+              <option value="Modern English">Modern English</option>
+              <option value="Tamil">Tamil (தமிழ்)</option>
+              <option value="Telugu">Telugu (తెలుగు)</option>
+              <option value="Hindi">Hindi (हिन्दी)</option>
+              <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
+              <option value="Malayalam">Malayalam (മലയാളം)</option>
+              <option value="Bengali">Bengali (বাংলা)</option>
+              <option value="Marathi">Marathi (मराठी)</option>
+            </select>
+            <button id="btnExecuteTranslate" class="flex items-center gap-1 px-3 py-1 rounded-lg bg-secondary-container text-[#070B1C] hover:brightness-110 font-mono text-xs font-bold transition-all shadow-sm">
+              <span class="material-symbols-outlined text-[14px]">play_arrow</span>
+              <span>Translate</span>
+            </button>
+            <button id="btnListenTranslation" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-white font-mono text-xs transition-all">
+              <span class="material-symbols-outlined text-[14px]">volume_up</span>
+              <span id="btnListenTranslationText">Listen (TTS)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Output Translation Body -->
+        <div id="translationOutputContainer" class="p-3.5 rounded-xl bg-surface-container-lowest border border-outline-variant/30 text-slate-200 text-xs font-sans leading-relaxed whitespace-pre-wrap min-h-[90px]">
+          <span class="text-outline italic">Select target language and click Translate to modernize this archival record.</span>
+        </div>
+
+        <!-- Archaic Glossary Accordion -->
+        <div id="glossaryContainer" class="hidden pt-2 border-t border-surface-container-highest/50 flex flex-col gap-1.5">
+          <span class="font-mono text-[10px] uppercase text-outline font-semibold">Archaic Colonial Legal Glossary:</span>
+          <div id="glossaryItems" class="flex flex-wrap gap-1.5"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -183,6 +250,7 @@
 {% block extra_scripts %}
 <script>
   const docId = "{{ document.document_id if document else 'DOC-1912-KDL' }}";
+  const docLanguage = "{{ document.language if document else 'English & Tamil Vernacular' }}";
   const ocrImg = document.getElementById('ocrDocumentImage');
   const imageContainer = document.getElementById('ocrImageContainer');
   const boxesOverlay = document.getElementById('ocrBoxesOverlay');
@@ -368,6 +436,381 @@
     Toast.info('Re-running Neural OCR on this document scan...');
     loadOcrData(true);
   });
+
+  // Legal Entities Extraction
+  const btnExtractEntities = document.getElementById('btnExtractEntities');
+  const legalEntitiesCard = document.getElementById('legalEntitiesCard');
+  const entitiesBadgesGrid = document.getElementById('entitiesBadgesGrid');
+
+  if (btnExtractEntities) {
+    btnExtractEntities.addEventListener('click', async () => {
+      btnExtractEntities.disabled = true;
+      Toast.info('Extracting structured legal entities and colonial tenure fields...');
+      try {
+        const res = await API.get(`/api/v1/ocr/${docId}/entities`);
+        if (res && res.entities) {
+          const e = res.entities;
+          entitiesBadgesGrid.innerHTML = `
+            <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/30 flex flex-col gap-0.5">
+              <span class="text-outline text-[10px] uppercase">Registry / Survey No</span>
+              <span class="text-white font-bold">${e.registry_or_survey_no || 'N/A'}</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/30 flex flex-col gap-0.5">
+              <span class="text-outline text-[10px] uppercase">Jurisdiction & Taluk</span>
+              <span class="text-secondary font-semibold">${e.district_and_taluk || 'N/A'}</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/30 flex flex-col gap-0.5">
+              <span class="text-outline text-[10px] uppercase">Tenure Settlement Holder</span>
+              <span class="text-tertiary font-semibold">${e.tenure_holder || 'N/A'}</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/30 flex flex-col gap-0.5">
+              <span class="text-outline text-[10px] uppercase">Total Land Extent</span>
+              <span class="text-emerald-400 font-bold">${e.land_extent || 'N/A'}</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/30 flex flex-col gap-0.5">
+              <span class="text-outline text-[10px] uppercase">Annual Permanent Assessment</span>
+              <span class="text-amber-300 font-bold">${e.assessment_amount || 'N/A'}</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/30 flex flex-col gap-0.5">
+              <span class="text-outline text-[10px] uppercase">Historical Sanad Date</span>
+              <span class="text-white">${e.historical_date || 'N/A'}</span>
+            </div>
+            <div class="col-span-full p-2.5 rounded-xl bg-surface-container border border-outline-variant/30 flex flex-col gap-1">
+              <span class="text-outline text-[10px] uppercase">Governing Enactments & Regulations</span>
+              <div class="flex flex-wrap gap-1">
+                ${(e.legal_acts_cited || []).map(act => `<span class="px-2 py-0.5 rounded bg-primary-container/20 text-primary border border-primary/30 text-[10px]">${act}</span>`).join('')}
+              </div>
+            </div>
+            <div class="col-span-full p-2.5 rounded-xl bg-surface-container border border-outline-variant/30 flex flex-col gap-1">
+              <span class="text-outline text-[10px] uppercase">Official Endorsements & Signatories</span>
+              <div class="flex flex-wrap gap-1">
+                ${(e.official_signatories || []).map(sig => `<span class="px-2 py-0.5 rounded bg-surface-container-high text-slate-200 border border-outline-variant/30 text-[10px]">${sig}</span>`).join('')}
+              </div>
+            </div>
+          `;
+          legalEntitiesCard.classList.remove('hidden');
+          Toast.success('Structured legal metadata extracted and indexed.', 'Legal NER Complete');
+        }
+      } catch (err) {
+        Toast.error(err.message || 'Entity extraction failed.');
+      } finally {
+        btnExtractEntities.disabled = false;
+      }
+    });
+  }
+
+  // --- Audio / Text-To-Speech (TTS) Engine for OCR & Translations ---
+  let activeSpeechSession = 0;
+  let currentlyPlayingMode = null; // 'ocr' | 'translation' | null
+
+  function stopAllSpeech() {
+    activeSpeechSession++;
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    currentlyPlayingMode = null;
+    resetTtsButtons();
+  }
+
+  function resetTtsButtons() {
+    const btnOcr = document.getElementById('btnListenOcr');
+    const iconOcr = document.getElementById('iconListenOcr');
+    const textOcr = document.getElementById('textListenOcr');
+    if (btnOcr && iconOcr && textOcr) {
+      iconOcr.textContent = 'volume_up';
+      textOcr.textContent = 'Listen (OCR)';
+      btnOcr.classList.remove('bg-rose-500/20', 'border-rose-500/40', 'text-rose-400');
+      btnOcr.classList.add('text-secondary');
+    }
+
+    const btnTrans = document.getElementById('btnListenTranslation');
+    const btnTransText = document.getElementById('btnListenTranslationText');
+    if (btnTrans && btnTransText) {
+      const iconTrans = btnTrans.querySelector('.material-symbols-outlined');
+      if (iconTrans) iconTrans.textContent = 'volume_up';
+      btnTransText.textContent = 'Listen (TTS)';
+      btnTrans.classList.remove('bg-rose-500/20', 'border-rose-500/40', 'text-rose-400');
+    }
+  }
+
+  function resolveLanguageTag(languageName, sampleText) {
+    // 1. Script-based detection from Unicode ranges if Indic characters are present
+    if (sampleText) {
+      if (/[\u0B80-\u0BFF]/.test(sampleText)) return 'ta-IN'; // Tamil
+      if (/[\u0C00-\u0C7F]/.test(sampleText)) return 'te-IN'; // Telugu
+      if (/[\u0900-\u097F]/.test(sampleText)) {
+        if (languageName === 'Marathi') return 'mr-IN';
+        return 'hi-IN'; // Hindi / Marathi
+      }
+      if (/[\u0C80-\u0CFF]/.test(sampleText)) return 'kn-IN'; // Kannada
+      if (/[\u0D00-\u0D7F]/.test(sampleText)) return 'ml-IN'; // Malayalam
+      if (/[\u0980-\u09FF]/.test(sampleText)) return 'bn-IN'; // Bengali
+    }
+
+    // 2. Language name mapping
+    const map = {
+      'Tamil': 'ta-IN',
+      'Telugu': 'te-IN',
+      'Hindi': 'hi-IN',
+      'Kannada': 'kn-IN',
+      'Malayalam': 'ml-IN',
+      'Bengali': 'bn-IN',
+      'Marathi': 'mr-IN',
+      'Modern English': 'en-IN'
+    };
+    if (map[languageName]) return map[languageName];
+
+    // 3. Fallback based on document's detected script metadata
+    const docMeta = (typeof docLanguage !== 'undefined' ? docLanguage : '').toLowerCase();
+    if (docMeta.includes('tamil')) return 'ta-IN';
+    if (docMeta.includes('telugu')) return 'te-IN';
+    if (docMeta.includes('hindi')) return 'hi-IN';
+    if (docMeta.includes('kannada')) return 'kn-IN';
+    if (docMeta.includes('malayalam')) return 'ml-IN';
+    if (docMeta.includes('bengali')) return 'bn-IN';
+
+    return 'en-IN';
+  }
+
+  function speakTextWithEngine(rawText, langTag, mode, onStarted, onCompleted) {
+    if (!('speechSynthesis' in window)) {
+      Toast.warning('Speech synthesis is not supported on this platform.');
+      return;
+    }
+
+    stopAllSpeech();
+    const sessionId = ++activeSpeechSession;
+    currentlyPlayingMode = mode;
+
+    // Sentence/clause chunking to prevent Chromium 15s freeze
+    const rawChunks = rawText.match(/[^.!?\n\r]+[.!?\n\r]+|[^.!?\n\r]+/g) || [rawText];
+    const chunks = rawChunks.map(c => c.trim()).filter(c => c.length > 0);
+
+    if (chunks.length === 0) {
+      Toast.info('No readable text found to speak.');
+      return;
+    }
+
+    const voices = window.speechSynthesis.getVoices();
+    const prefix = langTag.split('-')[0].toLowerCase();
+    const matchedVoice = voices.find(v => v.lang.toLowerCase() === langTag.toLowerCase())
+                      || voices.find(v => v.lang.toLowerCase().replace('_', '-').startsWith(prefix))
+                      || voices.find(v => v.lang.toLowerCase().startsWith('en'));
+
+    let chunkIndex = 0;
+    if (onStarted) onStarted();
+
+    function speakNext() {
+      if (sessionId !== activeSpeechSession) return;
+      if (chunkIndex >= chunks.length) {
+        stopAllSpeech();
+        if (onCompleted) onCompleted();
+        return;
+      }
+
+      const chunk = chunks[chunkIndex++];
+      const utterance = new SpeechSynthesisUtterance(chunk);
+      utterance.lang = langTag;
+      if (matchedVoice) utterance.voice = matchedVoice;
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+
+      utterance.onend = () => {
+        if (sessionId === activeSpeechSession) {
+          speakNext();
+        }
+      };
+
+      utterance.onerror = (e) => {
+        console.warn('TTS playback chunk error:', e);
+        if (sessionId === activeSpeechSession) {
+          if (chunkIndex < chunks.length) {
+            speakNext();
+          } else {
+            stopAllSpeech();
+            if (onCompleted) onCompleted();
+          }
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    speakNext();
+  }
+
+  // --- Listen to Verified OCR Text Directly ---
+  const btnListenOcr = document.getElementById('btnListenOcr');
+  const iconListenOcr = document.getElementById('iconListenOcr');
+  const textListenOcr = document.getElementById('textListenOcr');
+
+  if (btnListenOcr) {
+    btnListenOcr.addEventListener('click', () => {
+      if (currentlyPlayingMode === 'ocr') {
+        stopAllSpeech();
+        Toast.info('Transcription voice playback stopped.');
+        return;
+      }
+
+      const text = textArea ? textArea.value.trim() : '';
+      if (!text) {
+        Toast.info('No transcription content available to read aloud.');
+        return;
+      }
+
+      // Resolve spoken language based on mentioned language in document / target selector
+      const selectedTarget = targetLanguageSelect ? targetLanguageSelect.value : 'Modern English';
+      const langTag = resolveLanguageTag(selectedTarget, text);
+
+      speakTextWithEngine(
+        text,
+        langTag,
+        'ocr',
+        () => {
+          if (iconListenOcr) iconListenOcr.textContent = 'stop_circle';
+          if (textListenOcr) textListenOcr.textContent = 'Stop Listening';
+          btnListenOcr.classList.remove('text-secondary');
+          btnListenOcr.classList.add('bg-rose-500/20', 'border-rose-500/40', 'text-rose-400');
+          Toast.info(`Playing verified transcription aloud (${langTag})...`);
+        },
+        () => {
+          resetTtsButtons();
+        }
+      );
+    });
+  }
+
+  // --- Translation & Modernization ---
+  const btnOpenTranslate = document.getElementById('btnOpenTranslate');
+  const translationCard = document.getElementById('translationCard');
+  const btnExecuteTranslate = document.getElementById('btnExecuteTranslate');
+  const targetLanguageSelect = document.getElementById('targetLanguageSelect');
+  const translationOutputContainer = document.getElementById('translationOutputContainer');
+  const glossaryContainer = document.getElementById('glossaryContainer');
+  const glossaryItems = document.getElementById('glossaryItems');
+  const btnListenTranslation = document.getElementById('btnListenTranslation');
+  const btnListenTranslationText = document.getElementById('btnListenTranslationText');
+
+  if (btnOpenTranslate && translationCard) {
+    btnOpenTranslate.addEventListener('click', () => {
+      translationCard.classList.toggle('hidden');
+      if (!translationCard.classList.contains('hidden')) {
+        translationCard.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  }
+
+  if (btnExecuteTranslate) {
+    btnExecuteTranslate.addEventListener('click', async () => {
+      const targetLang = targetLanguageSelect.value;
+      btnExecuteTranslate.disabled = true;
+      translationOutputContainer.innerHTML = `<div class="flex items-center gap-2 text-secondary py-2"><span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span><span>Modernizing and translating archival record into ${targetLang}...</span></div>`;
+      
+      try {
+        const res = await API.post(`/api/v1/ocr/${docId}/translate`, {
+          target_language: targetLang,
+          raw_text: textArea ? textArea.value.trim() : ''
+        });
+
+        if (res && res.translated_text) {
+          translationOutputContainer.textContent = res.translated_text;
+          
+          // Render glossary items
+          if (res.archaic_glossary && Object.keys(res.archaic_glossary).length > 0) {
+            glossaryItems.innerHTML = Object.entries(res.archaic_glossary).map(([term, data]) => `
+              <div class="px-2.5 py-1 rounded-lg bg-surface-container border border-outline-variant/30 text-[10px] flex items-center gap-1.5" title="${data.definition}">
+                <span class="text-tertiary font-bold">${term}:</span>
+                <span class="text-slate-300">${data.vernacular || data.modern_term}</span>
+              </div>
+            `).join('');
+            glossaryContainer.classList.remove('hidden');
+          } else {
+            glossaryContainer.classList.add('hidden');
+          }
+
+          Toast.success(`Translation modernized into ${targetLang} (${res.engine_used}).`, 'Translation Ready');
+        }
+      } catch (err) {
+        translationOutputContainer.innerHTML = `<span class="text-error">Translation failed: ${err.message}</span>`;
+        Toast.error(err.message || 'Translation failed.');
+      } finally {
+        btnExecuteTranslate.disabled = false;
+      }
+    });
+  }
+
+  // --- TTS Read Aloud for Translation (with Auto-Translate if not yet generated) ---
+  if (btnListenTranslation) {
+    btnListenTranslation.addEventListener('click', async () => {
+      if (currentlyPlayingMode === 'translation') {
+        stopAllSpeech();
+        Toast.info('Translation speech stopped.');
+        return;
+      }
+
+      let text = translationOutputContainer ? translationOutputContainer.innerText.trim() : '';
+      const isPlaceholder = !text || text.includes('Select target language') || text.includes('Modernizing and translating');
+      const targetLang = targetLanguageSelect ? targetLanguageSelect.value : 'Modern English';
+
+      // Auto-translate if text has not yet been translated
+      if (isPlaceholder) {
+        btnExecuteTranslate.disabled = true;
+        btnListenTranslation.disabled = true;
+        translationOutputContainer.innerHTML = `<div class="flex items-center gap-2 text-secondary py-2"><span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span><span>Translating document into ${targetLang} for speech synthesis...</span></div>`;
+
+        try {
+          const res = await API.post(`/api/v1/ocr/${docId}/translate`, {
+            target_language: targetLang,
+            raw_text: textArea ? textArea.value.trim() : ''
+          });
+
+          if (res && res.translated_text) {
+            translationOutputContainer.textContent = res.translated_text;
+            text = res.translated_text;
+
+            if (res.archaic_glossary && Object.keys(res.archaic_glossary).length > 0) {
+              glossaryItems.innerHTML = Object.entries(res.archaic_glossary).map(([term, data]) => `
+                <div class="px-2.5 py-1 rounded-lg bg-surface-container border border-outline-variant/30 text-[10px] flex items-center gap-1.5" title="${data.definition}">
+                  <span class="text-tertiary font-bold">${term}:</span>
+                  <span class="text-slate-300">${data.vernacular || data.modern_term}</span>
+                </div>
+              `).join('');
+              glossaryContainer.classList.remove('hidden');
+            }
+          } else {
+            throw new Error('No translated text returned from server.');
+          }
+        } catch (err) {
+          translationOutputContainer.innerHTML = `<span class="text-error">Translation failed: ${err.message}</span>`;
+          Toast.error(err.message || 'Auto-translation failed.');
+          btnExecuteTranslate.disabled = false;
+          btnListenTranslation.disabled = false;
+          return;
+        } finally {
+          btnExecuteTranslate.disabled = false;
+          btnListenTranslation.disabled = false;
+        }
+      }
+
+      const langTag = resolveLanguageTag(targetLang, text);
+      const iconTrans = btnListenTranslation.querySelector('.material-symbols-outlined');
+
+      speakTextWithEngine(
+        text,
+        langTag,
+        'translation',
+        () => {
+          if (iconTrans) iconTrans.textContent = 'stop_circle';
+          if (btnListenTranslationText) btnListenTranslationText.textContent = 'Stop';
+          btnListenTranslation.classList.add('bg-rose-500/20', 'border-rose-500/40', 'text-rose-400');
+          Toast.info(`Speaking ${targetLang} translation aloud (${langTag})...`);
+        },
+        () => {
+          resetTtsButtons();
+        }
+      );
+    });
+  }
 
   document.addEventListener('DOMContentLoaded', loadOcrData);
 </script>

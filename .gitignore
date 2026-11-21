@@ -69,5 +69,7 @@ uploads/masks/*
 !uploads/masks/.gitkeep
 uploads/exports/*
 !uploads/exports/.gitkeep
+uploads/stages/*
+!uploads/stages/.gitkeep
 
 

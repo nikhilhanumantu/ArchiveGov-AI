@@ -1,4 +1,6 @@
 import sys
+# Prevent blocked C-extension DLL crashes on Windows AppLocker environments
+sys.modules.setdefault("ujson", None)
 from pathlib import Path
 import pytest
 

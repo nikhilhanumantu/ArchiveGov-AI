@@ -103,6 +103,47 @@
       </div>
     </div>
   </div>
+
+  <!-- RESTORATION TIME MACHINE (Module 3) -->
+  <div class="bg-surface-container-low/90 backdrop-blur-2xl rounded-2xl p-space-lg border border-outline-variant/30 shadow-2xl flex flex-col gap-space-md" id="time-machine-container" data-doc-id="{{ document_id }}">
+    <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-space-xs">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-secondary text-[22px]">history</span>
+        <h2 class="font-headline-sm text-sm text-white font-bold">Restoration Time Machine (Module 3)</h2>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="tm-toggle-diff" class="px-3 py-1 rounded-lg border border-tertiary/40 text-tertiary text-xs font-mono flex items-center gap-1 hover:bg-tertiary/10 transition-colors">
+          <span class="material-symbols-outlined text-xs">difference</span>
+          <span>Reconstructed Diff Mask</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Horizontal Scrubber Track -->
+    <div id="time-machine-scrubber" class="w-full"></div>
+
+    <!-- Live Stage Preview & Model Metadata -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+      <div class="md:col-span-8 relative aspect-[4/3] bg-black/50 rounded-xl overflow-hidden border border-outline-variant/30">
+        <img id="tm-stage-image" src="/api/v1/files/{{ document.restored_file_key or document.original_file_key }}" class="w-full h-full object-contain" alt="Time Machine Stage" />
+        <img id="tm-diff-overlay" src="" class="absolute inset-0 w-full h-full object-contain hidden pointer-events-none opacity-85" alt="Diff Heatmap" />
+      </div>
+      <div class="md:col-span-4 flex flex-col gap-3 p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/20 text-xs">
+        <div class="text-[11px] font-mono text-secondary uppercase tracking-wider">Active Stage Inspection</div>
+        <div id="tm-current-stage-name" class="font-semibold text-white text-sm">Stage: Master Restored</div>
+        <div class="flex flex-col gap-1">
+          <span class="text-on-surface-variant font-mono text-[10px]">Processing Pipeline:</span>
+          <span id="tm-stage-model" class="text-on-surface font-mono font-medium">Neural Multi-Stage Pipeline</span>
+        </div>
+        <div class="pt-2 border-t border-outline-variant/20 flex flex-col gap-2">
+          <a href="/lens/{{ document_id }}" class="w-full py-2 px-3 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary border border-secondary/30 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+            <span class="material-symbols-outlined text-sm">center_focus_strong</span>
+            <span>Open in Document Lens</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -196,7 +237,12 @@
     }
   });
 
-  document.addEventListener('DOMContentLoaded', loadVersions);
+  document.addEventListener('DOMContentLoaded', () => {
+    loadVersions();
+    if (typeof RestorationTimeMachine !== 'undefined') {
+      new RestorationTimeMachine("time-machine-container", { docId: docId });
+    }
+  });
 </script>
 {% endblock %}
 

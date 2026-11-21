@@ -1,13 +1,44 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Optional
 from backend.app.core.dependencies import get_current_user
 from backend.app.database.repositories.version_repo import DocumentVersionRepository
 from backend.app.database.repositories.document_repo import DocumentRepository
 from backend.app.database.repositories.audit_repo import AuditRepository
+from backend.app.services.time_machine_service import time_machine_service
 
-router = APIRouter(prefix="/api/v1/versions", tags=["Document Versions"])
+router = APIRouter(tags=["Document Versions"])
 version_repo = DocumentVersionRepository()
 doc_repo = DocumentRepository()
 audit_repo = AuditRepository()
+
+@router.get("/{document_id}/stages")
+def get_stages(
+    document_id: str,
+    version_id: Optional[str] = Query(None),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Restoration Time Machine: Retrieve ordered restoration stages (Module 3).
+    """
+    res = time_machine_service.get_stages(document_id, version_id=version_id)
+    if not res.get("stages") and res.get("error"):
+        raise HTTPException(status_code=404, detail=res["error"])
+    return res
+
+@router.get("/{document_id}/diff-mask")
+def get_diff_mask(
+    document_id: str,
+    from_stage: str = Query("original", description="Source stage name"),
+    to_stage: str = Query("final", description="Target stage name"),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Restoration Time Machine: Compute or retrieve difference mask / heatmap (reconstructed_visual).
+    """
+    res = time_machine_service.get_diff_mask(document_id, from_stage=from_stage, to_stage=to_stage)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Failed to compute diff mask"))
+    return res
 
 @router.get("/{document_id}")
 def get_document_versions(document_id: str, user: dict = Depends(get_current_user)):

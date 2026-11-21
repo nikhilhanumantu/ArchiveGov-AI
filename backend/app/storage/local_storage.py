@@ -15,8 +15,9 @@ class LocalStorage:
         self.restored = Path(settings.RESTORED_DIR)
         self.masks = Path(settings.MASKS_DIR)
         self.exports = Path(settings.EXPORTS_DIR)
+        self.stages = self.base_dir / "stages"
         
-        for d in [self.originals, self.working, self.restored, self.masks, self.exports]:
+        for d in [self.originals, self.working, self.restored, self.masks, self.exports, self.stages]:
             d.mkdir(parents=True, exist_ok=True)
 
     def save_upload(self, upload_file: UploadFile) -> Tuple[str, str, int, str]:
@@ -64,13 +65,22 @@ class LocalStorage:
 
     def resolve_path(self, file_key: str, category: Optional[str] = None) -> Optional[Path]:
         """Safely resolve file path preventing path traversal."""
+        # Handle potential nested path for stages: e.g. "stages/doc_id/v2.0/stage.png"
+        clean_key = file_key.replace("\\", "/").strip("/")
+        if ".." in clean_key:
+            return None
+            
+        direct_candidate = self.base_dir / clean_key
+        if direct_candidate.exists() and direct_candidate.is_file():
+            return direct_candidate
+
         safe_name = Path(file_key).name
         if category:
             p = self.base_dir / category / safe_name
             if p.exists():
                 return p
         # Check all categories
-        for cat in ["originals", "restored", "working", "masks", "exports"]:
+        for cat in ["originals", "restored", "working", "masks", "exports", "stages"]:
             p = self.base_dir / cat / safe_name
             if p.exists():
                 return p

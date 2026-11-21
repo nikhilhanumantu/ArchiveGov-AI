@@ -1,3 +1,5 @@
+import sys
+sys.modules.setdefault("ujson", None)
 import logging
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException
@@ -12,7 +14,7 @@ from backend.app.routers import (
     auth, documents, restoration, damage_analysis,
     inpainting, ocr, archive, versions, reviews,
     analytics, users, settings as settings_router,
-    notifications, files, pages
+    notifications, files, copilot, lens, timeline, pages
 )
 
 # Configure logging
@@ -59,6 +61,10 @@ static_path = FRONTEND_DIR / "static"
 static_path.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
+uploads_path = Path(settings.UPLOAD_DIR)
+uploads_path.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
+
 # Mount API Routers
 app.include_router(auth.router)
 app.include_router(documents.router)
@@ -67,13 +73,20 @@ app.include_router(damage_analysis.router)
 app.include_router(inpainting.router)
 app.include_router(ocr.router)
 app.include_router(archive.router)
-app.include_router(versions.router)
+app.include_router(versions.router, prefix="/api/v1/versions")
+app.include_router(versions.router, prefix="/api/versions")
 app.include_router(reviews.router)
 app.include_router(analytics.router)
 app.include_router(users.router)
 app.include_router(settings_router.router)
 app.include_router(notifications.router)
 app.include_router(files.router)
+app.include_router(copilot.router, prefix="/api/v1/copilot")
+app.include_router(copilot.router, prefix="/api/copilot")
+app.include_router(lens.router, prefix="/api/v1/lens")
+app.include_router(lens.router, prefix="/api/lens")
+app.include_router(timeline.router, prefix="/api/v1/timeline")
+app.include_router(timeline.router, prefix="/api/timeline")
 
 # Mount HTML UI Pages Router
 app.include_router(pages.router)

@@ -23,6 +23,7 @@ from backend.app.ai.enhancement.gfpgan_adapter import gfpgan_adapter
 from backend.app.ai.enhancement.finegrain_adapter import finegrain_adapter
 from backend.app.ai.enhancement.openrouter_gemini_adapter import openrouter_gemini_adapter
 from backend.app.ai.enhancement.google_ai_studio_adapter import google_ai_studio_adapter
+from backend.app.ai.evaluation.provenance_map import provenance_generator
 from backend.app.workers.job_worker import job_worker
 
 router = APIRouter(prefix="/api/v1/restoration", tags=["Restoration Studio"])
@@ -533,6 +534,46 @@ def google_ai_studio_enhance_document(request: GoogleAIStudioEnhanceRequest, use
         "metrics": result,
         "rate_limit_notice": result.get("rate_limit_notice")
     }
+
+@router.get("/provenance/{document_id}")
+def get_pixel_provenance(document_id: str, user: dict = Depends(require_permission(Permission.DOCUMENT_VIEW))):
+    """
+    Generate synthetic pixel provenance overlay and calculate stroke integrity metrics.
+    Colors: Emerald Green (Untouched Ink), Archival Amber (Contrast Boosted), Electric Purple (Inpainted).
+    """
+    doc = doc_repo.find_by_id(document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Archival document not found.")
+
+    orig_key = doc.get("original_file_key", "")
+    rest_key = doc.get("restored_file_key") or orig_key
+    orig_path = storage.resolve_path(orig_key, "originals")
+    rest_path = storage.resolve_path(rest_key, "restored")
+
+    mask_key = f"mask_{document_id}.png"
+    mask_path = storage.resolve_path(mask_key, "masks")
+
+    out_key = f"provenance_{document_id}.png"
+    out_path = str(storage.working / out_key)
+
+    res = provenance_generator.generate_provenance_map(
+        original_path=str(orig_path) if orig_path else "",
+        restored_path=str(rest_path) if rest_path else "",
+        mask_path=str(mask_path) if mask_path and mask_path.exists() else None,
+        output_path=out_path,
+        document_id=document_id
+    )
+
+    audit_repo.log(
+        user_id=user["_id"],
+        action="PROVENANCE_MAP_VERIFIED",
+        resource_type="document",
+        resource_id=document_id,
+        metadata={"fidelity_index": res.get("fidelity_index")}
+    )
+
+    return res
+
 
 
 

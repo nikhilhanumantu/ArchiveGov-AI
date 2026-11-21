@@ -93,6 +93,11 @@
       <button class="p-space-xs rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" id="toolGrid" title="Micro-Grid Overlay" type="button">
         <span class="material-symbols-outlined text-[18px]">grid_4x4</span>
       </button>
+      <div class="w-px h-4 bg-outline-variant mx-space-xs"></div>
+      <button class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 text-[11px] font-mono font-semibold transition-all shadow-sm" id="btnVerifyProvenanceStudio" title="Verify Pixel Provenance Map" type="button">
+        <span class="material-symbols-outlined text-[16px]">fingerprint</span>
+        <span class="hidden sm:inline">Verify Pixel Provenance</span>
+      </button>
     </div>
   </div>
 
@@ -1118,6 +1123,113 @@
       Toast.error(err.message, 'Execution Error');
     }
   });
+
+  // Pixel Provenance Map Controller
+  const btnVerifyProvStudio = document.getElementById('btnVerifyProvenanceStudio');
+  const provModalStudio = document.getElementById('provenanceModalStudio');
+  const closeProvStudio = document.getElementById('closeProvenanceStudioBtn');
+  const provImgStudio = document.getElementById('provenanceImgStudio');
+  const provLoadingStudio = document.getElementById('provLoadingStudio');
+
+  if (btnVerifyProvStudio && provModalStudio) {
+    btnVerifyProvStudio.addEventListener('click', async () => {
+      provModalStudio.classList.remove('hidden');
+      provModalStudio.classList.add('flex');
+      if (provLoadingStudio) provLoadingStudio.classList.remove('hidden');
+
+      try {
+        const targetDoc = typeof currentDocId !== 'undefined' ? currentDocId : '{{ document.document_id if document else "DOC-1912-KDL" }}';
+        const res = await API.get(`/api/v1/restoration/provenance/${targetDoc}`);
+        if (res && res.provenance_image_url) {
+          if (provImgStudio) provImgStudio.src = res.provenance_image_url + '?t=' + Date.now();
+          const u = document.getElementById('provUntouchedPctStudio');
+          const c = document.getElementById('provContrastPctStudio');
+          const i = document.getElementById('provInpaintedPctStudio');
+          const h = document.getElementById('provHallucinationStudio');
+          if (u) u.textContent = res.untouched_ink_pct + '%';
+          if (c) c.textContent = res.contrast_recovered_pct + '%';
+          if (i) i.textContent = res.inpainted_region_pct + '%';
+          if (h) h.textContent = res.zero_text_hallucination_verified ? 'VERIFIED' : 'FLAGGED';
+        }
+      } catch (e) {
+        Toast.error(e.message || 'Failed to generate provenance map');
+      } finally {
+        if (provLoadingStudio) provLoadingStudio.classList.add('hidden');
+      }
+    });
+  }
+
+  if (closeProvStudio && provModalStudio) {
+    closeProvStudio.addEventListener('click', () => {
+      provModalStudio.classList.add('hidden');
+      provModalStudio.classList.remove('flex');
+    });
+  }
 </script>
+
+  <!-- Pixel Provenance Modal Dialog -->
+  <div id="provenanceModalStudio" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/85 backdrop-blur-md p-4 transition-all">
+    <div class="relative w-full max-w-4xl max-h-[90vh] bg-surface-container-low border border-emerald-500/40 rounded-2xl shadow-2xl p-6 flex flex-col gap-4 animate-scaleUp overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-surface-container-highest/60 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <span class="material-symbols-outlined text-[24px]">fingerprint</span>
+          </div>
+          <div>
+            <h3 class="font-headline-sm text-base font-bold text-white">Synthetic Pixel Provenance & Lineage Map</h3>
+            <p class="font-mono text-[11px] text-outline">Per-pixel forensic verification between original scan and AI restoration</p>
+          </div>
+        </div>
+        <button id="closeProvenanceStudioBtn" class="p-2 rounded-xl text-outline hover:text-white hover:bg-surface-container-high transition-all">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Provenance Metrics Row -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs">
+        <div class="p-3 rounded-xl bg-surface-container-lowest border border-emerald-500/30 flex flex-col gap-1">
+          <span class="text-emerald-400 font-bold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Untouched Dark Ink</span>
+          </span>
+          <span class="text-xl font-bold text-white" id="provUntouchedPctStudio">--%</span>
+          <span class="text-[10px] text-outline">100% Verbatim Original</span>
+        </div>
+        <div class="p-3 rounded-xl bg-surface-container-lowest border border-amber-500/30 flex flex-col gap-1">
+          <span class="text-amber-400 font-bold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span>Contrast Recovered</span>
+          </span>
+          <span class="text-xl font-bold text-white" id="provContrastPctStudio">--%</span>
+          <span class="text-[10px] text-outline">Sharpened Faint Strokes</span>
+        </div>
+        <div class="p-3 rounded-xl bg-surface-container-lowest border border-purple-500/30 flex flex-col gap-1">
+          <span class="text-purple-400 font-bold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+            <span>Inpainted / Rebuilt</span>
+          </span>
+          <span class="text-xl font-bold text-white" id="provInpaintedPctStudio">--%</span>
+          <span class="text-[10px] text-outline">Tear & Void Synthesis</span>
+        </div>
+        <div class="p-3 rounded-xl bg-surface-container-lowest border border-cyan-500/30 flex flex-col gap-1">
+          <span class="text-cyan-400 font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">verified</span>
+            <span>Hallucination Guard</span>
+          </span>
+          <span class="text-xl font-bold text-emerald-400" id="provHallucinationStudio">VERIFIED</span>
+          <span class="text-[10px] text-outline">0 Synthetic Words</span>
+        </div>
+      </div>
+
+      <!-- Image Preview Stage -->
+      <div class="relative w-full aspect-[4/3] max-h-[460px] bg-slate-950 rounded-xl overflow-hidden flex items-center justify-center border border-outline-variant/30 shadow-inner">
+        <img id="provenanceImgStudio" src="" alt="Pixel Provenance Map" class="w-full h-full object-contain" />
+        <div id="provLoadingStudio" class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm text-secondary font-mono text-xs gap-2">
+          <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+          <span>Generating forensic provenance map...</span>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 

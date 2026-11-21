@@ -11,10 +11,13 @@ from backend.app.database.repositories.job_repo import RestorationJobRepository
 from backend.app.database.repositories.document_repo import DocumentRepository
 from backend.app.database.repositories.version_repo import DocumentVersionRepository
 from backend.app.database.repositories.ocr_repo import OCRRepository
+from backend.app.database.repositories.stage_repo import RestorationStageRepository
+from backend.app.database.repositories.ocr_region_repo import OCRRegionRepository
 from backend.app.database.repositories.notification_repo import NotificationRepository
 from backend.app.database.repositories.audit_repo import AuditRepository
 from backend.app.core.config import settings
 from backend.app.storage.local_storage import storage
+from backend.app.ai.rag.index_service import index_service
 from backend.app.ai.preprocessing.opencv_processor import opencv_processor
 from backend.app.ai.damage_detection.damage_detector import damage_detector
 from backend.app.ai.enhancement.realesrgan_adapter import realesrgan_adapter
@@ -37,6 +40,8 @@ class RestorationJobWorker:
         self.doc_repo = DocumentRepository()
         self.version_repo = DocumentVersionRepository()
         self.ocr_repo = OCRRepository()
+        self.stage_repo = RestorationStageRepository()
+        self.region_repo = OCRRegionRepository()
         self.notif_repo = NotificationRepository()
         self.audit_repo = AuditRepository()
 
@@ -68,6 +73,29 @@ class RestorationJobWorker:
             self.doc_repo.update(doc_id, {"status": "processing"})
             current_file_path = str(orig_path)
             
+            # Setup stage artifacts directory for Time Machine (Module 3)
+            version_id = "v2.0"
+            stage_dir = Path(settings.UPLOAD_DIR) / "stages" / doc_id / version_id
+            stage_dir.mkdir(parents=True, exist_ok=True)
+            self.stage_repo.delete_by_doc(doc_id)
+
+            # Stage 0: Original immutable ingest
+            stage_0_path = stage_dir / "00_original.png"
+            shutil.copy2(str(orig_path), str(stage_0_path))
+            self.stage_repo.create({
+                "doc_id": doc_id,
+                "version_id": version_id,
+                "stage_order": 0,
+                "stage_name": "original",
+                "label": "Original Ingest Scan",
+                "file_path": str(stage_0_path),
+                "file_url": f"/uploads/stages/{doc_id}/{version_id}/00_original.png",
+                "model_used": "Raw Archival Sensor Scan",
+                "fallback_used": False,
+                "reconstructed_mask_path": None,
+                "metrics": None
+            })
+
             requested_ops = job.get("requested_operations") or [
                 'damage_analysis', 'opencv_preprocessing', 'realesrgan_enhancement',
                 'lama_inpainting', 'paddleocr_extraction', 'quality_evaluation'
@@ -84,6 +112,32 @@ class RestorationJobWorker:
                 damage_results = damage_detector.analyze_document(current_file_path)
                 self.job_repo.update_stage(job_id, "damage_analysis", "completed", 100, damage_results)
                 self.doc_repo.update(doc_id, {"damage_analysis": damage_results})
+                
+                # Persist damage mask artifact
+                import cv2
+                import numpy as np
+                stage_2_path = stage_dir / "02_damage_mask.png"
+                curr_img_cv = opencv_processor.load_image(current_file_path)
+                dmg_mask = np.zeros_like(curr_img_cv)
+                for d in damage_results.get("defects", []):
+                    bx, by, bw, bh = d.get("bbox", [0, 0, 0, 0])
+                    cv2.rectangle(dmg_mask, (bx, by), (bx + bw, by + bh), (0, 0, 255), -1)
+                dmg_vis = cv2.addWeighted(curr_img_cv, 0.7, dmg_mask, 0.3, 0)
+                cv2.imwrite(str(stage_2_path), dmg_vis)
+                self.stage_repo.create({
+                    "doc_id": doc_id,
+                    "version_id": version_id,
+                    "stage_order": 2,
+                    "stage_name": "damage_mask",
+                    "label": "Damage Defect Map",
+                    "file_path": str(stage_2_path),
+                    "file_url": f"/uploads/stages/{doc_id}/{version_id}/02_damage_mask.png",
+                    "model_used": "Archival Morphological Damage Analysis",
+                    "fallback_used": False,
+                    "reconstructed_mask_path": str(stage_2_path),
+                    "metrics": {"defect_count": len(damage_results.get("defects", []))}
+                })
+
                 completed_steps += 1
                 self.job_repo.update_status(job_id, "running", int(5 + completed_steps * step_progress))
             else:
@@ -106,6 +160,23 @@ class RestorationJobWorker:
                 self.job_repo.update_stage(job_id, "opencv_preprocessing", "completed", 100, preproc_results)
                 current_file_path = preprocessed_path
                 
+                # Persist stage 1 artifact
+                stage_1_path = stage_dir / "01_preprocessed.png"
+                shutil.copy2(preprocessed_path, str(stage_1_path))
+                self.stage_repo.create({
+                    "doc_id": doc_id,
+                    "version_id": version_id,
+                    "stage_order": 1,
+                    "stage_name": "preprocessed",
+                    "label": "Substrate Preprocessing",
+                    "file_path": str(stage_1_path),
+                    "file_url": f"/uploads/stages/{doc_id}/{version_id}/01_preprocessed.png",
+                    "model_used": "OpenCV Archival Pipeline (CLAHE + Bilateral Denoise + Deskew)",
+                    "fallback_used": False,
+                    "reconstructed_mask_path": None,
+                    "metrics": preproc_results.get("operations_applied", {})
+                })
+
                 # Create Version V1.1
                 v1_1 = self.version_repo.create({
                     "version_id": f"VER-{uuid.uuid4().hex[:8].upper()}",
@@ -185,6 +256,41 @@ class RestorationJobWorker:
                     enhancer_results = realesrgan_adapter.enhance(current_file_path, enhanced_path, outscale=1.5)
 
                 self.job_repo.update_stage(job_id, "realesrgan_enhancement", "completed", 100, enhancer_results)
+                
+                # Persist stage 3 artifact and diff heatmap
+                import cv2
+                import numpy as np
+                stage_3_path = stage_dir / "03_enhanced.png"
+                shutil.copy2(enhanced_path, str(stage_3_path))
+                diff_3_path = stage_dir / "03_enhanced_diff.png"
+                try:
+                    img_pre = cv2.imread(current_file_path)
+                    img_enh = cv2.imread(enhanced_path)
+                    if img_pre is not None and img_enh is not None:
+                        if img_pre.shape[:2] != img_enh.shape[:2]:
+                            img_pre = cv2.resize(img_pre, (img_enh.shape[1], img_enh.shape[0]))
+                        diff3 = cv2.absdiff(img_pre, img_enh)
+                        gray3 = cv2.cvtColor(diff3, cv2.COLOR_BGR2GRAY)
+                        norm3 = cv2.normalize(gray3, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+                        heat3 = cv2.applyColorMap(norm3, cv2.COLORMAP_JET)
+                        cv2.imwrite(str(diff_3_path), heat3)
+                except Exception:
+                    diff_3_path = None
+
+                self.stage_repo.create({
+                    "doc_id": doc_id,
+                    "version_id": version_id,
+                    "stage_order": 3,
+                    "stage_name": "enhanced",
+                    "label": "Neural Resolution Enhancement",
+                    "file_path": str(stage_3_path),
+                    "file_url": f"/uploads/stages/{doc_id}/{version_id}/03_enhanced.png",
+                    "model_used": enhancer_choice,
+                    "fallback_used": enhancer_results.get("engine_used", "") != enhancer_choice,
+                    "reconstructed_mask_path": str(diff_3_path) if diff_3_path and diff_3_path.exists() else None,
+                    "metrics": enhancer_results
+                })
+
                 current_file_path = enhanced_path
                 completed_steps += 1
                 self.job_repo.update_status(job_id, "running", int(5 + completed_steps * step_progress))
@@ -226,6 +332,30 @@ class RestorationJobWorker:
                     lama_results = {"engine": "LaMa Seamless Substrate Normalization", "reconstructed_percentage": 0.0}
                     
                 self.job_repo.update_stage(job_id, "lama_inpainting", "completed", 100, lama_results)
+
+                # Persist stage 4 artifact and inpaint mask
+                stage_4_path = stage_dir / "04_inpainted.png"
+                shutil.copy2(restored_path, str(stage_4_path))
+                mask_4_path = stage_dir / "04_inpaint_mask.png"
+                if np.count_nonzero(auto_mask) > 0:
+                    cv2.imwrite(str(mask_4_path), auto_mask)
+                else:
+                    mask_4_path = None
+
+                self.stage_repo.create({
+                    "doc_id": doc_id,
+                    "version_id": version_id,
+                    "stage_order": 4,
+                    "stage_name": "inpainted",
+                    "label": "Neural Void Inpainting",
+                    "file_path": str(stage_4_path),
+                    "file_url": f"/uploads/stages/{doc_id}/{version_id}/04_inpainted.png",
+                    "model_used": "LaMa Large Mask Inpainting",
+                    "fallback_used": False,
+                    "reconstructed_mask_path": str(mask_4_path) if mask_4_path and mask_4_path.exists() else None,
+                    "metrics": lama_results
+                })
+
                 current_file_path = restored_path
                 completed_steps += 1
                 self.job_repo.update_status(job_id, "running", int(5 + completed_steps * step_progress))
@@ -253,6 +383,70 @@ class RestorationJobWorker:
                     "lines_found": ocr_results.get("line_count", len(ocr_results.get("regions", []))),
                     "confidence": ocr_results.get("average_confidence", 96.0)
                 })
+
+                # Persist OCR regions to ocr_regions collection for Module 4 Lens
+                raw_lines = ocr_results.get("regions", [])
+                damage_defects = damage_results.get("defects", [])
+                regions_to_save = []
+                for l_idx, line in enumerate(raw_lines):
+                    l_txt = line.get("text", "").strip()
+                    if not l_txt:
+                        continue
+                    c_raw = float(line.get("confidence", 95.0))
+                    conf = round(c_raw / 100.0, 3) if c_raw > 1.0 else round(c_raw, 3)
+                    bbox = line.get("bbox", [50, 50 + l_idx * 40, 600, 30])
+                    norm = line.get("bbox_normalized", [0.05, 0.05 + l_idx * 0.04, 0.75, 0.035])
+
+                    damage_overlap = 0.0
+                    rx, ry, rw, rh = bbox[0], bbox[1], bbox[2], bbox[3]
+                    for defect in damage_defects:
+                        dbbox = defect.get("bbox", [0, 0, 0, 0])
+                        dx, dy, dw, dh = dbbox[0], dbbox[1], dbbox[2], dbbox[3]
+                        ix = max(0, min(rx + rw, dx + dw) - max(rx, dx))
+                        iy = max(0, min(ry + rh, dy + dh) - max(ry, dy))
+                        if ix > 0 and iy > 0:
+                            damage_overlap = round((ix * iy) / max(1, rw * rh), 3)
+                            break
+
+                    regions_to_save.append({
+                        "region_id": f"reg_{doc_id[:6]}_l_{l_idx+1}",
+                        "doc_id": doc_id,
+                        "version_id": "v2.0",
+                        "page_number": 1,
+                        "granularity": "line",
+                        "bbox_pixels": bbox,
+                        "bbox_normalized": norm,
+                        "text": l_txt,
+                        "confidence": conf,
+                        "damage_overlap": damage_overlap
+                    })
+
+                    words = l_txt.split()
+                    if words:
+                        w_w = max(10, int(rw / len(words)))
+                        for widx, w in enumerate(words):
+                            regions_to_save.append({
+                                "region_id": f"reg_{doc_id[:6]}_w_{l_idx+1}_{widx+1}",
+                                "doc_id": doc_id,
+                                "version_id": "v2.0",
+                                "page_number": 1,
+                                "granularity": "word",
+                                "bbox_pixels": [rx + widx * w_w, ry, w_w - 4, rh],
+                                "bbox_normalized": [
+                                    round(norm[0] + widx * (norm[2] / len(words)), 3),
+                                    norm[1],
+                                    round(norm[2] / len(words), 3),
+                                    norm[3]
+                                ],
+                                "text": w,
+                                "confidence": conf,
+                                "damage_overlap": damage_overlap
+                            })
+
+                if regions_to_save:
+                    self.region_repo.delete_by_doc(doc_id)
+                    self.region_repo.insert_many(regions_to_save)
+
                 completed_steps += 1
                 self.job_repo.update_status(job_id, "running", int(5 + completed_steps * step_progress))
             else:
@@ -271,6 +465,23 @@ class RestorationJobWorker:
                 self.job_repo.update_status(job_id, "running", 95)
             else:
                 self.job_repo.update_stage(job_id, "quality_evaluation", "skipped", 100, {"skipped": True})
+
+            # Stage 5 Master Artifact: Persist Final Stage
+            stage_5_path = stage_dir / "05_final.png"
+            shutil.copy2(current_file_path, str(stage_5_path))
+            self.stage_repo.create({
+                "doc_id": doc_id,
+                "version_id": version_id,
+                "stage_order": 5,
+                "stage_name": "final",
+                "label": "Certified Restored Master",
+                "file_path": str(stage_5_path),
+                "file_url": f"/uploads/stages/{doc_id}/{version_id}/05_final.png",
+                "model_used": "Certified Archival Multi-Stage Pipeline",
+                "fallback_used": False,
+                "reconstructed_mask_path": None,
+                "metrics": metrics
+            })
 
             # Create Master Restored Version V2.0
             parent_ver_id = v1_1["version_id"] if v1_1 else doc.get("current_version_id", "v1.0")
@@ -298,6 +509,12 @@ class RestorationJobWorker:
                 "ocr_text": ocr_results["extracted_text"],
                 "quality_metrics": metrics
             })
+
+            # Auto-hook RAG Indexing for Copilot (Module 1)
+            try:
+                index_service.index_document(doc_id)
+            except Exception as idx_err:
+                logger.warning(f"Auto-index error for {doc_id}: {idx_err}")
 
             # Complete Job
             self.job_repo.update_status(

@@ -15,19 +15,18 @@ def hash_password(password: str) -> str:
     return f"pbkdf2:sha256:200000${base64.b64encode(salt).decode('utf-8')}${base64.b64encode(dk).decode('utf-8')}"
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify plain password against PBKDF2 or argon2 hash."""
-    if not hashed_password:
+    """Verify plain password against PBKDF2 hash. Strictly rejects non-PBKDF2 or plaintext hashes."""
+    if not hashed_password or not isinstance(hashed_password, str):
+        return False
+    if not hashed_password.startswith("pbkdf2:sha256:"):
         return False
     try:
-        if hashed_password.startswith("pbkdf2:sha256:"):
-            parts = hashed_password.split("$")
-            iterations = int(parts[0].split(":")[2])
-            salt = base64.b64decode(parts[1].encode('utf-8'))
-            expected_dk = base64.b64decode(parts[2].encode('utf-8'))
-            dk = hashlib.pbkdf2_hmac('sha256', plain_password.encode('utf-8'), salt, iterations)
-            return hmac.compare_digest(dk, expected_dk)
-        # Fallback for plain text during testing if explicitly flagged
-        return hmac.compare_digest(plain_password, hashed_password)
+        parts = hashed_password.split("$")
+        iterations = int(parts[0].split(":")[2])
+        salt = base64.b64decode(parts[1].encode('utf-8'))
+        expected_dk = base64.b64decode(parts[2].encode('utf-8'))
+        dk = hashlib.pbkdf2_hmac('sha256', plain_password.encode('utf-8'), salt, iterations)
+        return hmac.compare_digest(dk, expected_dk)
     except Exception:
         return False
 

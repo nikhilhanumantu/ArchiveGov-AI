@@ -108,76 +108,78 @@ def seed_all(db=None):
     if db is None:
         db = get_db()
         
-    # Check if already seeded
-    if db.users.count_documents({}) > 0:
-        return
-
-    print("Seeding ArchiveGov AI database with official roles and historical records...")
     now = datetime.now(timezone.utc).isoformat()
-    
-    # 1. Users
-    users = [
-        {
-            "name": "Dr. Rajeshwar Sharma",
-            "email": "admin@archivegov.ai",
-            "employee_id": "GOV-ADM-001",
-            "password_hash": hash_password("Admin@12345"),
-            "role": "admin",
-            "department_id": "Central Government National Archives",
-            "account_status": "active",
-            "created_at": now
-        },
-        {
-            "name": "Senior Officer Meenakshi Iyer",
-            "email": "officer@archivegov.ai",
-            "employee_id": "GOV-OFF-042",
-            "password_hash": hash_password("Officer@12345"),
-            "role": "archive_officer",
-            "department_id": "Land Revenue & Settlement Archives",
-            "account_status": "active",
-            "created_at": now
-        },
-        {
-            "name": "Chief Reviewer K. Ramanathan",
-            "email": "reviewer@archivegov.ai",
-            "employee_id": "GOV-REV-019",
-            "password_hash": hash_password("Reviewer@12345"),
-            "role": "reviewer",
-            "department_id": "Historical Court & Legal Records",
-            "account_status": "active",
-            "created_at": now
-        },
-        {
-            "name": "Operator Vikram Singh",
-            "email": "operator@archivegov.ai",
-            "employee_id": "GOV-DAT-108",
-            "password_hash": hash_password("Operator@12345"),
-            "role": "data_operator",
-            "department_id": "Digital Preservation Ingestion Unit",
-            "account_status": "active",
-            "created_at": now
-        }
-    ]
     user_ids = {}
-    for u in users:
-        res = db.users.insert_one(u)
-        user_ids[u["role"]] = str(res.inserted_id)
 
-    # 2. Generate Real Sample Image Files
-    orig_path_1 = settings.ORIGINALS_DIR + "/doc_1912_kdl_orig.png"
-    rest_path_1 = settings.RESTORED_DIR + "/doc_1912_kdl_rest.png"
-    generate_sample_parchment_image(orig_path_1, is_restored=False, text_title="LAND SETTLEMENT RECORD 1912 — KUDDALUR")
-    generate_sample_parchment_image(rest_path_1, is_restored=True, text_title="LAND SETTLEMENT RECORD 1912 — KUDDALUR")
+    # 1. Users
+    if db.users.count_documents({}) == 0:
+        print("Seeding ArchiveGov AI database with official roles...")
+        users = [
+            {
+                "name": "Dr. Rajeshwar Sharma",
+                "email": "admin@archivegov.ai",
+                "employee_id": "GOV-ADM-001",
+                "password_hash": hash_password("Admin@12345"),
+                "role": "admin",
+                "department_id": "Central Government National Archives",
+                "account_status": "active",
+                "created_at": now
+            },
+            {
+                "name": "Senior Officer Meenakshi Iyer",
+                "email": "officer@archivegov.ai",
+                "employee_id": "GOV-OFF-042",
+                "password_hash": hash_password("Officer@12345"),
+                "role": "archive_officer",
+                "department_id": "Land Revenue & Settlement Archives",
+                "account_status": "active",
+                "created_at": now
+            },
+            {
+                "name": "Chief Reviewer K. Ramanathan",
+                "email": "reviewer@archivegov.ai",
+                "employee_id": "GOV-REV-019",
+                "password_hash": hash_password("Reviewer@12345"),
+                "role": "reviewer",
+                "department_id": "Historical Court & Legal Records",
+                "account_status": "active",
+                "created_at": now
+            },
+            {
+                "name": "Operator Vikram Singh",
+                "email": "operator@archivegov.ai",
+                "employee_id": "GOV-DAT-108",
+                "password_hash": hash_password("Operator@12345"),
+                "role": "data_operator",
+                "department_id": "Digital Preservation Ingestion Unit",
+                "account_status": "active",
+                "created_at": now
+            }
+        ]
+        for u in users:
+            res = db.users.insert_one(u)
+            user_ids[u["role"]] = str(res.inserted_id)
+    else:
+        for u in db.users.find({}):
+            user_ids[u.get("role", "admin")] = str(u["_id"])
 
-    orig_path_2 = settings.ORIGINALS_DIR + "/doc_1888_bng_orig.png"
-    rest_path_2 = settings.RESTORED_DIR + "/doc_1888_bng_rest.png"
-    generate_sample_parchment_image(orig_path_2, is_restored=False, text_title="BENGAL TENANCY REGISTRY FOLIO 1888")
-    generate_sample_parchment_image(rest_path_2, is_restored=True, text_title="BENGAL TENANCY REGISTRY FOLIO 1888")
+    # 2. Documents
+    if db.documents.count_documents({"document_id": "DOC-1912-KDL"}) == 0:
+        print("Seeding historical documents and OCR records...")
+        orig_path_1 = settings.ORIGINALS_DIR + "/doc_1912_kdl_orig.png"
+        rest_path_1 = settings.RESTORED_DIR + "/doc_1912_kdl_rest.png"
+        generate_sample_parchment_image(orig_path_1, is_restored=False, text_title="LAND SETTLEMENT RECORD 1912 — KUDDALUR")
+        generate_sample_parchment_image(rest_path_1, is_restored=True, text_title="LAND SETTLEMENT RECORD 1912 — KUDDALUR")
 
-    orig_path_3 = settings.ORIGINALS_DIR + "/doc_1934_bom_orig.png"
-    rest_path_3 = settings.RESTORED_DIR + "/doc_1934_bom_rest.png"
-    generate_sample_parchment_image(orig_path_3, is_restored=False, text_title="BOMBAY HIGH COURT DECREE 1934")
-    generate_sample_parchment_image(rest_path_3, is_restored=True, text_title="BOMBAY HIGH COURT DECREE 1934")
+        orig_path_2 = settings.ORIGINALS_DIR + "/doc_1888_bng_orig.png"
+        rest_path_2 = settings.RESTORED_DIR + "/doc_1888_bng_rest.png"
+        generate_sample_parchment_image(orig_path_2, is_restored=False, text_title="BENGAL TENANCY REGISTRY FOLIO 1888")
+        generate_sample_parchment_image(rest_path_2, is_restored=True, text_title="BENGAL TENANCY REGISTRY FOLIO 1888")
+
+        orig_path_3 = settings.ORIGINALS_DIR + "/doc_1934_bom_orig.png"
+        rest_path_3 = settings.RESTORED_DIR + "/doc_1934_bom_rest.png"
+        generate_sample_parchment_image(orig_path_3, is_restored=False, text_title="BOMBAY HIGH COURT DECREE 1934")
+        generate_sample_parchment_image(rest_path_3, is_restored=True, text_title="BOMBAY HIGH COURT DECREE 1934")
 
     # 3. Documents
     docs = [

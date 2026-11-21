@@ -1,0 +1,148 @@
+<!-- ArchiveGov AI — Sovereign Copilot Drawer (Module 1) -->
+<div id="copilot-drawer-container" class="relative z-[60]">
+  <!-- Floating Launch Button (bottom-right) -->
+  <button id="copilot-floating-toggle" 
+          type="button"
+          class="fixed bottom-6 right-6 z-[60] px-4 py-2.5 rounded-full bg-surface-container-high border border-primary/40 text-primary hover:bg-primary/20 shadow-2xl flex items-center gap-2 text-xs font-semibold tracking-wide backdrop-blur-md transition-all hover:scale-105 group"
+          title="Open Sovereign Archival Copilot (Ctrl+K)">
+    <span class="material-symbols-outlined text-base group-hover:rotate-12 transition-transform text-secondary">psychology</span>
+    <span>Ask the Archive</span>
+    <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+  </button>
+
+  <!-- Drawer Backdrop -->
+  <div id="copilot-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden transition-opacity z-[65]"></div>
+
+  <!-- Drawer Slide-over Panel -->
+  <aside id="copilot-drawer" 
+         class="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-surface-container-lowest border-l border-outline-variant/30 shadow-2xl flex flex-col z-[70] transform translate-x-full transition-transform duration-300 ease-in-out">
+    
+    <!-- Drawer Header -->
+    <div class="h-16 px-5 border-b border-outline-variant/30 flex items-center justify-between bg-surface-container-low shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center text-primary shadow-[0_0_12px_rgba(160,120,255,0.3)]">
+          <span class="material-symbols-outlined text-lg">auto_awesome</span>
+        </div>
+        <div>
+          <h2 class="font-headline-sm text-sm font-semibold text-on-surface flex items-center gap-2">
+            <span>Ask the Archive</span>
+            <span class="text-[10px] font-telemetry-code uppercase tracking-wider px-1.5 py-0.5 rounded bg-secondary/15 text-secondary border border-secondary/30">RAG v3.0</span>
+          </h2>
+          <p class="text-[11px] text-on-surface-variant font-mono">Grounded Sovereign Archival Intelligence</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <button id="copilot-clear-btn" type="button" class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Clear Chat History">
+          <span class="material-symbols-outlined text-lg">restart_alt</span>
+        </button>
+        <button id="copilot-close-btn" type="button" class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Close Drawer (Esc)">
+          <span class="material-symbols-outlined text-lg">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Scope Selector & Controls Bar -->
+    <div class="p-3 bg-surface-container-lowest border-b border-outline-variant/20 flex flex-col gap-2 shrink-0">
+      <div class="flex items-center justify-between text-xs">
+        <!-- Scope Toggle -->
+        <div class="flex items-center bg-surface-container-low p-0.5 rounded-lg border border-outline-variant/30 text-[11px]">
+          <button id="copilot-scope-all" type="button" class="px-2.5 py-1 rounded-md text-primary font-medium bg-primary/20 transition-all">Entire Vault</button>
+          <button id="copilot-scope-current" type="button" class="px-2.5 py-1 rounded-md text-on-surface-variant hover:text-on-surface transition-all">This Document</button>
+        </div>
+
+        <!-- Department Filter -->
+        <select id="copilot-dept-filter" class="bg-surface-container-low border border-outline-variant/30 text-[11px] text-on-surface rounded-lg px-2 py-1 focus:outline-none focus:border-secondary">
+          <option value="all">All Departments</option>
+          <option value="Land Revenue">Land Revenue</option>
+          <option value="Public Health">Public Health</option>
+          <option value="Judicial Records">Judicial Records</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Message Thread Scrollable Viewport -->
+    <div id="copilot-messages" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 text-xs custom-scrollbar">
+      <!-- Assistant Welcome -->
+      <div class="flex gap-3">
+        <div class="w-7 h-7 rounded-full bg-secondary/20 border border-secondary/40 text-secondary flex items-center justify-center shrink-0 mt-0.5">
+          <span class="material-symbols-outlined text-sm">robot_2</span>
+        </div>
+        <div class="flex flex-col gap-1.5 max-w-[85%]">
+          <div class="p-3.5 rounded-2xl rounded-tl-sm bg-surface-container-low border border-outline-variant/30 text-on-surface leading-relaxed">
+            Welcome to <b>ArchiveGov AI Sovereign Copilot</b>. Query historical records, land settlements, colonial fiscal assessments (rupees/annas/pies), or public health epidemics with verifiable citations.
+          </div>
+          <span class="text-[10px] font-telemetry-code text-on-surface-variant px-1 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Grounded on Certified Vault Corpus
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Query Suggestions Container -->
+    <div id="copilot-suggestions-bar" class="px-4 py-2 bg-surface-container-lowest border-t border-outline-variant/20 flex flex-col gap-1.5 shrink-0">
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] font-telemetry-code text-secondary uppercase tracking-wider font-semibold">Suggested Questions:</span>
+      </div>
+      <div id="copilot-suggestions-container" class="grid grid-cols-2 gap-2 pb-1">
+        <button type="button" class="copilot-suggestion-card text-left p-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface hover:text-secondary text-[11px] transition-all flex items-start gap-1.5 group shadow-sm cursor-pointer" data-copilot-query="Which 1912–1918 records mention South Arcot or Kuddalur wet land assessments?">
+          <span class="material-symbols-outlined text-[14px] text-tertiary shrink-0 mt-0.5 group-hover:scale-110 transition-transform">help_outline</span>
+          <span class="line-clamp-2">Which 1912–1918 records...</span>
+        </button>
+        <button type="button" class="copilot-suggestion-card text-left p-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface hover:text-secondary text-[11px] transition-all flex items-start gap-1.5 group shadow-sm cursor-pointer" data-copilot-query="Summarize the 1918 Commissioner of Health epidemic containment report">
+          <span class="material-symbols-outlined text-[14px] text-tertiary shrink-0 mt-0.5 group-hover:scale-110 transition-transform">help_outline</span>
+          <span class="line-clamp-2">Summarize the 1918...</span>
+        </button>
+        <button type="button" class="copilot-suggestion-card text-left p-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface hover:text-secondary text-[11px] transition-all flex items-start gap-1.5 group shadow-sm cursor-pointer" data-copilot-query="List all sealed land revenue records and their annual assessment amounts">
+          <span class="material-symbols-outlined text-[14px] text-tertiary shrink-0 mt-0.5 group-hover:scale-110 transition-transform">help_outline</span>
+          <span class="line-clamp-2">List all sealed land revenu...</span>
+        </button>
+        <button type="button" class="copilot-suggestion-card text-left p-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface hover:text-secondary text-[11px] transition-all flex items-start gap-1.5 group shadow-sm cursor-pointer" data-copilot-query="What are the restoration quality metrics and OCR confidence across the vault?">
+          <span class="material-symbols-outlined text-[14px] text-tertiary shrink-0 mt-0.5 group-hover:scale-110 transition-transform">help_outline</span>
+          <span class="line-clamp-2">What are the restoration...</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="p-3 bg-surface-container-low border-t border-outline-variant/30 shrink-0">
+      <form id="copilot-form" class="relative flex items-center gap-2" onsubmit="event.preventDefault(); ArchiveCopilot.handleSend();">
+        <!-- Voice Speech-to-Text Button -->
+        <button 
+          id="copilot-voice-btn" 
+          type="button" 
+          class="w-10 h-10 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-outline hover:text-secondary flex items-center justify-center shrink-0 transition-all shadow-inner"
+          title="Voice Input (Speech-to-Text)"
+        >
+          <span class="material-symbols-outlined text-[20px]" id="copilot-voice-icon">mic</span>
+        </button>
+
+        <!-- Text Query Input -->
+        <div class="relative flex-1">
+          <input 
+            type="text" 
+            id="copilot-query-input" 
+            placeholder="Ask about deeds, acres, assessments, or [DOC-ID]..." 
+            class="w-full bg-surface-container/90 text-on-surface placeholder:text-outline text-xs pl-3 pr-9 py-2.5 rounded-xl border border-outline-variant/30 focus:border-secondary focus:ring-1 focus:ring-secondary/40 focus:outline-none transition-all shadow-inner"
+            autocomplete="off" 
+          />
+          <button 
+            type="submit" 
+            id="copilot-send-btn" 
+            class="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg bg-primary-container text-on-primary-container hover:brightness-110 flex items-center justify-center transition-all shadow-sm disabled:opacity-40"
+            title="Send Question"
+          >
+            <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+          </button>
+        </div>
+      </form>
+      <div class="flex items-center justify-between text-[10px] font-mono text-outline px-1 mt-1.5">
+        <span>Press <kbd class="px-1 py-0.5 rounded bg-surface-container text-white">Enter</kbd> to submit</span>
+        <span class="flex items-center gap-1 text-secondary">
+          <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+          Offline Resilient
+        </span>
+      </div>
+    </div>
+  </aside>
+</div>

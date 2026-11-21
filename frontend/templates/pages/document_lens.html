@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Document Intelligence Lens — {{ document.title if document else 'Archival Folio' }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="h-[calc(100vh-4rem)] flex flex-col bg-[#070B1C] text-on-surface overflow-hidden" id="document-lens-app" data-doc-id="{{ document_id }}">
+  <!-- Lens Header Bar -->
+  <header class="h-14 border-b border-outline-variant/30 bg-surface-container-lowest px-6 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-4">
+      <a href="/app/archive" class="text-on-surface-variant hover:text-secondary transition-colors flex items-center gap-1 text-xs">
+        <span class="material-symbols-outlined text-sm">arrow_back</span> Vault
+      </a>
+      <div class="h-4 w-px bg-outline-variant/30"></div>
+      <div>
+        <h1 class="font-headline-sm font-semibold text-sm text-on-surface flex items-center gap-2">
+          <span class="material-symbols-outlined text-secondary text-base">center_focus_strong</span>
+          <span>{{ document.title if document else 'Document Intelligence Lens' }}</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-surface-container-high text-secondary border border-secondary/30 font-telemetry-code">
+            {{ document.archive_reference_id if document else document_id }}
+          </span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Controls: Granularity & Page -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center bg-surface-container-low rounded-lg p-0.5 border border-outline-variant/30 text-xs">
+        <button class="granularity-btn px-2.5 py-1 rounded-md text-on-surface-variant hover:text-on-surface transition-all active bg-primary/20 text-primary font-medium" data-granularity="all">All</button>
+        <button class="granularity-btn px-2.5 py-1 rounded-md text-on-surface-variant hover:text-on-surface transition-all" data-granularity="line">Line</button>
+        <button class="granularity-btn px-2.5 py-1 rounded-md text-on-surface-variant hover:text-on-surface transition-all" data-granularity="word">Word</button>
+        <button class="granularity-btn px-2.5 py-1 rounded-md text-on-surface-variant hover:text-on-surface transition-all" data-granularity="block">Block</button>
+      </div>
+
+      <div class="h-4 w-px bg-outline-variant/30"></div>
+
+      <button id="btn-reconstructed-overlay" class="px-3 py-1.5 rounded-lg border border-outline-variant/40 hover:border-tertiary/60 text-xs text-on-surface flex items-center gap-1.5 transition-colors">
+        <span class="material-symbols-outlined text-sm text-tertiary">layers</span>
+        <span>Damage/Recon Overlay</span>
+      </button>
+
+      <a href="/app/restoration-result?document_id={{ document_id }}" class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-xs text-on-surface flex items-center gap-1.5 transition-colors">
+        <span class="material-symbols-outlined text-sm text-primary">history</span>
+        <span>Time Machine</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Lens Workspace Grid -->
+  <div class="flex-1 grid grid-cols-12 overflow-hidden">
+    <!-- Left: Canvas / Document Surface (Cols 1-8) -->
+    <div class="col-span-8 flex flex-col bg-[#050814] relative border-r border-outline-variant/30 overflow-hidden">
+      <!-- Canvas Tool Bar -->
+      <div class="absolute top-3 left-3 z-20 flex items-center gap-1 bg-surface-container-lowest/80 backdrop-blur-md border border-outline-variant/30 p-1 rounded-lg">
+        <button id="zoom-in" class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded" title="Zoom In">
+          <span class="material-symbols-outlined text-base">zoom_in</span>
+        </button>
+        <button id="zoom-out" class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded" title="Zoom Out">
+          <span class="material-symbols-outlined text-base">zoom_out</span>
+        </button>
+        <button id="zoom-reset" class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded" title="Reset View">
+          <span class="material-symbols-outlined text-base">fit_screen</span>
+        </button>
+        <div class="h-3 w-px bg-outline-variant/30 mx-1"></div>
+        <span id="region-count-badge" class="text-[11px] font-telemetry-code text-secondary px-2">0 Regions</span>
+      </div>
+
+      <!-- Main Interactive Canvas Viewport -->
+      <div id="lens-viewport" class="flex-1 overflow-auto flex items-center justify-center p-8 select-none cursor-grab active:cursor-grabbing relative">
+        <div id="lens-stage" class="relative inline-block transition-transform origin-center">
+          <img id="lens-document-image" 
+               src="/api/v1/files/{{ document.restored_file_key or document.original_file_key }}" 
+               alt="{{ document.title }}"
+               class="max-w-none shadow-2xl rounded border border-outline-variant/20 block"
+               style="max-height: 82vh;" />
+          <!-- SVG Overlay for precise normalized bounding boxes -->
+          <svg id="lens-svg-overlay" class="absolute inset-0 w-full h-full pointer-events-auto"></svg>
+        </div>
+      </div>
+
+      <!-- Provenance Legend -->
+      <div class="h-8 border-t border-outline-variant/20 bg-surface-container-lowest/90 px-4 flex items-center justify-between text-[11px] text-on-surface-variant font-telemetry-code shrink-0">
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm bg-secondary/30 border border-secondary"></span> High OCR (90%+)
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm bg-tertiary/30 border border-tertiary"></span> Moderate OCR (70-89%)
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-sm bg-error/30 border border-error"></span> Damaged / Reconstructed
+          </span>
+        </div>
+        <div>
+          <span>Click any bounding box to inspect sovereign epistemic provenance</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Intelligence Inspector Panel (Cols 9-12) -->
+    <div class="col-span-4 flex flex-col bg-surface-container-lowest overflow-y-auto p-5 border-l border-outline-variant/20 gap-5">
+      <!-- Panel Header -->
+      <div class="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-lg">biotech</span>
+          <h2 class="font-headline-sm font-semibold text-sm">Archival Inspector</h2>
+        </div>
+        <span id="selected-badge" class="text-[10px] font-telemetry-code uppercase tracking-wider px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">
+          No Region Selected
+        </span>
+      </div>
+
+      <!-- Epistemic Provenance Card: Source Fact -->
+      <div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-telemetry-code font-semibold text-secondary uppercase tracking-wider flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">verified</span> source_fact
+          </span>
+          <span class="text-[10px] text-on-surface-variant">Verbatim Archival Text</span>
+        </div>
+        <div id="inspector-source-fact" class="p-2.5 rounded-lg bg-surface-container-lowest font-mono text-xs text-on-surface leading-relaxed border border-outline-variant/20 min-h-[60px] whitespace-pre-wrap">
+          Click any word, line, or block on the canvas to inspect its certified transcription.
+        </div>
+      </div>
+
+      <!-- Epistemic Provenance Card: OCR Extraction Metrics -->
+      <div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-telemetry-code font-semibold text-tertiary uppercase tracking-wider flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">document_scanner</span> ocr_extraction
+          </span>
+          <span id="inspector-ocr-engine" class="text-[10px] text-on-surface-variant font-telemetry-code">PP-OCRv6 Deep Neural</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mt-1">
+          <div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/20">
+            <div class="text-[10px] text-on-surface-variant">Confidence Score</div>
+            <div id="inspector-confidence" class="font-telemetry-code text-sm font-semibold text-on-surface mt-0.5">--</div>
+          </div>
+          <div class="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/20">
+            <div class="text-[10px] text-on-surface-variant">Damage Defect Overlap</div>
+            <div id="inspector-damage-overlap" class="font-telemetry-code text-sm font-semibold text-on-surface mt-0.5">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Epistemic Provenance Card: AI Interpretation -->
+      <div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-telemetry-code font-semibold text-primary uppercase tracking-wider flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">psychology</span> ai_interpretation
+          </span>
+          <button id="btn-explain-selection" class="px-2 py-0.5 rounded text-[11px] bg-primary/20 text-primary hover:bg-primary/30 transition-colors font-medium flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">auto_awesome</span> Explain
+          </button>
+        </div>
+        <div id="inspector-ai-interpretation" class="text-xs text-on-surface leading-relaxed min-h-[70px] p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/20">
+          Click "Explain" to contextualize administrative rulings, fiscal denominations (rupees, annas, pies), or colonial land revenue deeds.
+        </div>
+      </div>
+
+      <!-- Cross-Vault Related Records -->
+      <div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-telemetry-code font-semibold text-on-surface uppercase tracking-wider flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">share</span> Cross-Vault Lineage
+          </span>
+          <span class="text-[10px] text-on-surface-variant" id="related-count-label">0 Linked</span>
+        </div>
+        <div id="inspector-related-list" class="flex flex-col gap-2 mt-1">
+          <div class="text-[11px] text-on-surface-variant py-2">Loading related contemporary folios...</div>
+        </div>
+      </div>
+
+      <!-- Bottom Quick Actions -->
+      <div class="mt-auto pt-2 flex items-center gap-2">
+        <button id="btn-ask-copilot-region" class="flex-1 py-2 px-3 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary border border-secondary/30 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+          <span class="material-symbols-outlined text-sm">chat</span>
+          <span>Ask Copilot About This</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/document_lens.js"></script>
+{% endblock %}

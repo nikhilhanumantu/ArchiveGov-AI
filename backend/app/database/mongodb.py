@@ -99,6 +99,31 @@ def create_indexes(db):
         
         # Settings
         db.system_settings.create_index([("setting_key", pymongo.ASCENDING)], unique=True)
+        
+        # v3.0 Intelligent Archival Collections
+        # OCR Regions (Module 4 Lens)
+        db.ocr_regions.create_index([("doc_id", pymongo.ASCENDING)])
+        db.ocr_regions.create_index([("region_id", pymongo.ASCENDING)])
+        db.ocr_regions.create_index([("doc_id", pymongo.ASCENDING), ("page_number", pymongo.ASCENDING)])
+
+        # Restoration Stages (Module 3 Time Machine)
+        db.restoration_stages.create_index([("doc_id", pymongo.ASCENDING), ("stage_order", pymongo.ASCENDING)])
+        db.restoration_stages.create_index([("version_id", pymongo.ASCENDING)])
+
+        # RAG Chunks (Module 1 Copilot)
+        db.rag_chunks.create_index([("chunk_id", pymongo.ASCENDING)], unique=True)
+        db.rag_chunks.create_index([("doc_id", pymongo.ASCENDING)])
+        db.rag_chunks.create_index([("department_id", pymongo.ASCENDING)])
+
+        # Copilot Sessions
+        db.copilot_sessions.create_index([("session_id", pymongo.ASCENDING)], unique=True)
+        db.copilot_sessions.create_index([("user_id", pymongo.ASCENDING)])
+
+        # Timeline Events (Module 2 Timeline)
+        db.timeline_events.create_index([("event_id", pymongo.ASCENDING)], unique=True)
+        db.timeline_events.create_index([("doc_id", pymongo.ASCENDING)])
+        db.timeline_events.create_index([("year", pymongo.ASCENDING)])
+        db.timeline_events.create_index([("timeline_id", pymongo.ASCENDING)])
     except Exception as ex:
         logger.warning(f"Index creation note: {ex}")
 

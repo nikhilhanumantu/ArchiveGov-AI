@@ -560,6 +560,74 @@ def test_gfpgan_enhance_endpoint(client):
     assert "engine" in data
     assert "metrics" in data
 
+# ==================== 14. V3.0 ASK THE ARCHIVE RAG COPILOT & EXTENSIONS ====================
+
+def test_copilot_suggestions(client):
+    headers = get_auth_headers(client)
+    response = client.get("/api/v1/copilot/suggestions", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert "suggestions" in data
+    assert isinstance(data["suggestions"], list)
+    assert len(data["suggestions"]) >= 3
+
+def test_copilot_ask_grounded_citations(client):
+    headers = get_auth_headers(client)
+    response = client.post(
+        "/api/v1/copilot/ask",
+        json={"query": "South Arcot Kuddalur wet land assessment 1912"},
+        headers=headers
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["answer"] and len(data["answer"]) > 10
+    assert "citations" in data
+    assert len(data["citations"]) > 0
+    doc_ids = [c["document_id"] for c in data["citations"]]
+    assert "DOC-1912-KDL" in doc_ids
+
+def test_ocr_entity_extraction_and_translation(client):
+    headers = get_auth_headers(client)
+    # 1. Test Legal Entity Extraction
+    ent_resp = client.get("/api/v1/ocr/DOC-1912-KDL/entities", headers=headers)
+    assert ent_resp.status_code == 200
+    ent_data = ent_resp.json()
+    assert ent_data["success"] is True
+    assert "entities" in ent_data
+    entities = ent_data["entities"]
+    assert "registry_or_survey_no" in entities
+    assert "district_and_taluk" in entities
+    assert "land_extent" in entities
+    assert "assessment_amount" in entities
+
+    # 2. Test Vernacular Translation
+    trans_resp = client.post(
+        "/api/v1/ocr/DOC-1912-KDL/translate",
+        json={"target_language": "Telugu"},
+        headers=headers
+    )
+    assert trans_resp.status_code == 200
+    trans_data = trans_resp.json()
+    assert trans_data["success"] is True
+    assert trans_data["target_language"] == "Telugu"
+    assert "translated_text" in trans_data
+    assert len(trans_data["translated_text"]) > 20
+    assert "archaic_glossary" in trans_data
+    assert len(trans_data["archaic_glossary"]) >= 1
+
+def test_pixel_provenance_endpoint(client):
+    headers = get_auth_headers(client)
+    response = client.get("/api/v1/restoration/provenance/DOC-1912-KDL", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert "provenance_image_url" in data
+    assert data["zero_text_hallucination_verified"] is True
+    assert "untouched_ink_pct" in data
+    assert "contrast_recovered_pct" in data
+    assert "inpainted_region_pct" in data
+
 
 
 

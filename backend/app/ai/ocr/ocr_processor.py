@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 from typing import Dict, Any
-from docx import Document
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -41,6 +40,10 @@ class OCROutputExporter:
 
     @staticmethod
     def export_docx(document_id: str, title: str, text: str) -> str:
+        try:
+            from docx import Document
+        except Exception as e:
+            raise RuntimeError(f"DOCX export engine unavailable: {e}")
         doc = Document()
         doc.add_heading("ArchiveGov AI — Certified Government Record Transcription", 0)
         

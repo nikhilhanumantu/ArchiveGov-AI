@@ -94,6 +94,7 @@
         {% block content %}{% endblock %}
       </main>
     </div>
+    {% include "components/copilot_drawer.html" %}
   {% else %}
     <!-- Unauthenticated Fullpage Layout -->
     {% block unauth_content %}{% endblock %}
@@ -108,7 +109,9 @@
   <script src="/static/js/auth.js"></script>
   <script src="/static/js/navigation.js"></script>
   {% if user %}
-  <script src="/static/js/notifications.js"></script>
+  <script src="/static/js/notifications.js?v=3.0.4"></script>
+  <script src="/static/js/copilot.js?v=3.0.4"></script>
+  <script src="/static/js/time_machine.js?v=3.0.4"></script>
   {% endif %}
 
   {% block extra_scripts %}{% endblock %}

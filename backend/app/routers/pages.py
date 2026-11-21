@@ -228,6 +228,39 @@ def history_versions_page(request: Request, document_id: str = None, user: dict 
         "app_name": settings.APP_NAME
     })
 
+@router.get("/lens/{document_id}", response_class=HTMLResponse)
+@router.get("/app/lens/{document_id}", response_class=HTMLResponse)
+@router.get("/app/lens", response_class=HTMLResponse)
+@router.get("/lens", response_class=HTMLResponse)
+def document_lens_page(request: Request, document_id: str = None, user: dict = Depends(get_current_user_optional)):
+    redirect = auth_guard(request, user)
+    if redirect:
+        return redirect
+    target_id = request.query_params.get("document_id") or document_id
+    doc, active_id, all_docs = resolve_active_document(target_id)
+    return templates.TemplateResponse(request=request, name="pages/document_lens.html", context={
+        "user": user,
+        "active_page": "document-lens",
+        "document": doc,
+        "document_id": active_id,
+        "all_documents": all_docs,
+        "app_name": settings.APP_NAME
+    })
+
+@router.get("/timeline", response_class=HTMLResponse)
+@router.get("/app/timeline", response_class=HTMLResponse)
+def timeline_page(request: Request, user: dict = Depends(get_current_user_optional)):
+    redirect = auth_guard(request, user)
+    if redirect:
+        return redirect
+    all_docs = doc_repo.list_all(limit=50)
+    return templates.TemplateResponse(request=request, name="pages/timeline.html", context={
+        "user": user,
+        "active_page": "timeline",
+        "all_documents": all_docs,
+        "app_name": settings.APP_NAME
+    })
+
 @router.get("/app/reports", response_class=HTMLResponse)
 @router.get("/app/analytics", response_class=HTMLResponse)
 def reports_page(request: Request, user: dict = Depends(get_current_user_optional)):

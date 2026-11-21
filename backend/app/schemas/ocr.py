@@ -11,4 +11,9 @@ class OCRExtractRequest(BaseModel):
     use_restored: Optional[bool] = True
     force_rescan: Optional[bool] = False
 
+class OCRTranslateRequest(BaseModel):
+    target_language: str = "Modern English"
+    raw_text: Optional[str] = None
+
+
 
