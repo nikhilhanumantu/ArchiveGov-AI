@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnAskCopilot = document.getElementById("btn-ask-copilot-region");
 
   let allRegions = [];
-  let activeGranularity = "all";
+  let activeGranularity = "line";
   let selectedRegion = null;
   let zoomLevel = 1.0;
 
@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!imgW || !imgH) return;
 
     const filtered = allRegions.filter(r => {
-      if (activeGranularity === "all") return true;
+      if (activeGranularity === "all") return r.granularity === "line";
       return r.granularity === activeGranularity;
     });
 

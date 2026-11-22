@@ -80,6 +80,21 @@ class LensService:
                 "action_needed": "Re-run pipeline to generate stage history / OCR regions"
             }
 
+        # Determine true image dimensions for accurate normalization
+        img_w, img_h = 1000, 1400
+        key = doc.get("restored_file_key") or doc.get("original_file_key")
+        if key:
+            try:
+                from backend.app.storage.local_storage import storage
+                import cv2
+                p = storage.resolve_path(key)
+                if p and p.exists():
+                    im = cv2.imread(str(p))
+                    if im is not None:
+                        img_h, img_w = im.shape[:2]
+            except Exception as e:
+                logger.warning(f"Could not read image shape for lens dimensions: {e}")
+
         # Convert raw_lines to persistent multi-granularity regions (line, word, block)
         damage_defects = doc.get("damage_analysis", {}).get("defects", [])
         synthesized_regions: List[Dict[str, Any]] = []
@@ -96,7 +111,12 @@ class LensService:
             conf = round(conf_raw / 100.0, 3) if conf_raw > 1.0 else round(conf_raw, 3)
 
             bbox = rl.get("bbox", [50, 50 + line_idx * 40, 600, 30])
-            norm = rl.get("bbox_normalized", [0.05, 0.05 + line_idx * 0.04, 0.75, 0.035])
+            norm = rl.get("bbox_normalized", [
+                round(bbox[0] / float(img_w), 4),
+                round(bbox[1] / float(img_h), 4),
+                round(bbox[2] / float(img_w), 4),
+                round(bbox[3] / float(img_h), 4)
+            ])
 
             # Compute overlap with damage defects
             damage_overlap = 0.0
@@ -138,9 +158,9 @@ class LensService:
                         "granularity": "word",
                         "bbox_pixels": [wx, ry, word_w - 4, rh],
                         "bbox_normalized": [
-                            round(norm[0] + widx * (norm[2] / len(words)), 3),
+                            round(norm[0] + widx * (norm[2] / len(words)), 4),
                             norm[1],
-                            round(norm[2] / len(words), 3),
+                            round(norm[2] / len(words), 4),
                             norm[3]
                         ],
                         "text": w,
@@ -165,10 +185,10 @@ class LensService:
                     "granularity": "block",
                     "bbox_pixels": [b_rx, b_ry, b_rw, b_rh],
                     "bbox_normalized": [
-                        round(b_rx / 1000.0, 3),
-                        round(b_ry / 1400.0, 3),
-                        round(b_rw / 1000.0, 3),
-                        round(b_rh / 1400.0, 3)
+                        round(b_rx / float(img_w), 4),
+                        round(b_ry / float(img_h), 4),
+                        round(b_rw / float(img_w), 4),
+                        round(b_rh / float(img_h), 4)
                     ],
                     "text": " ".join(block_text),
                     "confidence": round(sum(l["confidence"] for l in block_lines) / len(block_lines), 3),

@@ -106,12 +106,12 @@
 
       <!-- Document Image with Interactive Bounding Boxes Overlaid -->
       <div class="relative w-full h-[620px] bg-[#050814] overflow-hidden flex items-center justify-center select-none" id="ocrCanvasViewport">
-        <div id="ocrImageContainer" class="relative max-w-full max-h-full flex items-center justify-center transition-transform duration-150">
+        <div id="ocrImageContainer" class="relative inline-block transition-transform duration-150" style="display: inline-block;">
           <img 
             id="ocrDocumentImage"
             src="{% if document and document.restored_file_key %}/api/v1/files/{{ document.restored_file_key }}{% elif document and document.original_file_key %}/api/v1/files/{{ document.original_file_key }}{% else %}/api/v1/files/doc_1912_kdl_rest.png{% endif %}" 
             alt="Restored Archival Raster"
-            class="max-w-full max-h-[600px] object-contain object-center block select-none rounded-lg"
+            class="block max-h-[600px] w-auto max-w-full select-none rounded-lg shadow-2xl"
           />
           <div id="ocrBoxesOverlay" class="absolute inset-0 pointer-events-none"></div>
         </div>
@@ -339,7 +339,7 @@
     boxesOverlay.innerHTML = '';
     regions.forEach((r, idx) => {
       const box = document.createElement('div');
-      box.className = 'ocr-box absolute border border-cyan-400/60 bg-cyan-400/10 hover:bg-cyan-400/30 cursor-pointer pointer-events-auto transition-all rounded-[2px]';
+      box.className = 'ocr-box absolute border border-cyan-400/80 bg-cyan-400/10 hover:bg-cyan-400/30 hover:border-cyan-300 cursor-pointer pointer-events-auto transition-all rounded-[2px] shadow-[0_0_3px_rgba(34,211,238,0.25)]';
       const norm = r.bbox_normalized || [0.1, 0.1 + idx * 0.05, 0.8, 0.04];
       box.style.left = `${norm[0] * 100}%`;
       box.style.top = `${norm[1] * 100}%`;
