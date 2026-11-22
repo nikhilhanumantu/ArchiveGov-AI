@@ -359,9 +359,26 @@ class PaddleOCRAdapter:
 
         regions = []
         for i, line_str in enumerate(lines_text):
-            if i < len(morph_boxes):
-                bbox = morph_boxes[i]["bbox"]
-                bbox_norm = morph_boxes[i]["bbox_normalized"]
+            if morph_boxes:
+                # Proportional mapping across detected physical text lines from top to bottom
+                box_idx = min(len(morph_boxes) - 1, int(i * (len(morph_boxes) / max(1, total_lines))))
+                ref_box = morph_boxes[box_idx]["bbox"]
+                bx, by, bw, bh = ref_box
+                line_words = len(line_str.split())
+                if line_words >= 4:
+                    box_w = max(bw, int(w * 0.75))
+                    box_x = max(int(w * 0.08), min(bx, int(w * 0.15)))
+                else:
+                    box_w = max(bw, int(w * 0.40))
+                    box_x = max(int(w * 0.08), bx)
+
+                bbox = [box_x, by, box_w, max(14, bh)]
+                bbox_norm = [
+                    round(box_x / w, 3),
+                    round(by / h, 3),
+                    round(box_w / w, 3),
+                    round(max(14, bh) / h, 3)
+                ]
             else:
                 y_norm = round(min(0.95, (i + 1) / max(1, total_lines + 1)), 3)
                 bbox = [int(0.08 * w), int(y_norm * h), int(0.84 * w), max(18, int(h / max(1, total_lines * 1.5)))]
@@ -390,29 +407,56 @@ class PaddleOCRAdapter:
     def _run_morphological_ocr(self, img: np.ndarray, w: int, h: int, lang: str) -> Dict[str, Any]:
         """
         Morphological text stroke detector that identifies physical text regions
+        across the entire document (even over water stains, aging, and yellowing)
         and returns honest geometric coordinates without hallucinating fake text.
         """
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img
-        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 8)
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 3))
-        dilated = cv2.dilate(thresh, kernel, iterations=2)
-        contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        boxes = []
-        for cnt in contours:
-            x, y, bw, bh = cv2.boundingRect(cnt)
-            if bw > 30 and bh > 8 and bw < (w * 0.95) and bh < (h * 0.3):
-                boxes.append((x, y, bw, bh))
+        # Background illumination normalization to neutralize paper stains and blotches
+        bg = cv2.medianBlur(gray, 25)
+        diff = 255 - cv2.absdiff(gray, bg)
+        norm = cv2.normalize(diff, None, 0, 255, cv2.NORM_MINMAX)
 
-        boxes = sorted(boxes, key=lambda b: b[1])
+        thresh = cv2.adaptiveThreshold(norm, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 10)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (28, 2))
+        dilated = cv2.dilate(thresh, kernel, iterations=1)
+        cnts, _ = cv2.findContours(dilated, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+        raw_boxes = []
+        for c in cnts:
+            bx, by, bw, bh = cv2.boundingRect(c)
+            if bw > 25 and 7 <= bh <= 45 and bw < (w * 0.96) and bx > 5:
+                raw_boxes.append([bx, by, bw, bh])
+
+        raw_boxes.sort(key=lambda b: (b[1], b[0]))
+
+        # Merge horizontal word components that share the same line height
+        merged_boxes = []
+        for b in raw_boxes:
+            bx, by, bw, bh = b
+            found = False
+            for m in merged_boxes:
+                if abs((m[1] + m[3] / 2) - (by + bh / 2)) < 12:
+                    nx1 = min(m[0], bx)
+                    ny1 = min(m[1], by)
+                    nx2 = max(m[0] + m[2], bx + bw)
+                    ny2 = max(m[1] + m[3], by + bh)
+                    m[0], m[1], m[2], m[3] = nx1, ny1, nx2 - nx1, ny2 - ny1
+                    found = True
+                    break
+            if not found:
+                merged_boxes.append([bx, by, bw, bh])
+
+        merged_boxes.sort(key=lambda b: b[1])
+
         lines = []
-        for i, (bx, by, bw, bh) in enumerate(boxes):
+        for i, (bx, by, bw, bh) in enumerate(merged_boxes):
             lines.append({
                 "line_number": i + 1,
                 "text": "",  # Empty transcript because text recognition failed / was not read
                 "confidence": 0.0,
                 "bbox": [bx, by, bw, bh],
-                "bbox_normalized": [round(bx/w, 3), round(by/h, 3), round(bw/w, 3), round(bh/h, 3)]
+                "bbox_normalized": [round(bx / w, 3), round(by / h, 3), round(bw / w, 3), round(bh / h, 3)]
             })
 
         return {
