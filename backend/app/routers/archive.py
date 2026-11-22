@@ -38,32 +38,54 @@ def search_archive(
 
 @router.get("/export-csv")
 def export_archive_csv(user: dict = Depends(get_current_user)):
-    docs, _ = doc_repo.list_documents(limit=1000)
-    output = io.StringIO()
-    writer = csv.writer(output)
-    
-    # Headers
-    writer.writerow([
-        "Document ID", "Title", "Archive Reference ID", "Department",
-        "Category", "Original Date", "Language", "Status", "Created At"
-    ])
-    
-    for d in docs:
-        writer.writerow([
-            d.get("document_id", ""),
-            d.get("title", ""),
-            d.get("archive_reference_id", ""),
-            d.get("department_id", ""),
-            d.get("category", ""),
-            d.get("original_date", ""),
-            d.get("language", ""),
-            d.get("status", ""),
-            d.get("created_at", "")
-        ])
+    def generate_csv():
+        output = io.StringIO()
+        writer = csv.writer(output)
         
-    output.seek(0)
+        # Headers
+        writer.writerow([
+            "Document ID", "Title", "Archive Reference ID", "Department",
+            "Category", "Original Date", "Language", "Status", "Created At"
+        ])
+        yield output.getvalue()
+        output.seek(0)
+        output.truncate(0)
+        
+        page_size = 500
+        skip = 0
+        while True:
+            # Stable pagination iterates through full result set beyond 1,000 records
+            batch, total = doc_repo.list_documents(
+                skip=skip,
+                limit=page_size,
+                sort_by="created_at",
+                sort_dir=-1
+            )
+            if not batch:
+                break
+                
+            for d in batch:
+                writer.writerow([
+                    d.get("document_id", ""),
+                    d.get("title", ""),
+                    d.get("archive_reference_id", ""),
+                    d.get("department_id", ""),
+                    d.get("category", ""),
+                    d.get("original_date", ""),
+                    d.get("language", ""),
+                    d.get("status", ""),
+                    d.get("created_at", "")
+                ])
+            yield output.getvalue()
+            output.seek(0)
+            output.truncate(0)
+            
+            skip += len(batch)
+            if skip >= total or len(batch) < page_size:
+                break
+
     return StreamingResponse(
-        iter([output.getvalue()]),
+        generate_csv(),
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=archivegov_records.csv"}
     )

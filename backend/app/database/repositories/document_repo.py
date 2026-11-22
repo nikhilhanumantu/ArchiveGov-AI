@@ -138,7 +138,13 @@ class DocumentRepository:
             db.damage_analyses.delete_many({"document_id": actual_doc_id})
             db.reviews.delete_many({"document_id": actual_doc_id})
             db.restoration_jobs.delete_many({"document_id": actual_doc_id})
-        except Exception:
+            # Cascade delete intelligent archival collections (Copilot, Lens, Timeline, Time Machine)
+            db.rag_chunks.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
+            db.ocr_regions.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
+            db.timeline_events.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
+            db.restoration_stages.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
+            db.copilot_sessions.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}, {"related_document_id": actual_doc_id}]})
+        except Exception as e:
             pass
 
         sync_disk_if_mock()

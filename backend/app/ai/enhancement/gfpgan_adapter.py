@@ -61,7 +61,7 @@ class GFPGANAdapter:
         try:
             import gfpgan
             is_installed = True
-        except ImportError:
+        except Exception:
             is_installed = False
 
         return {

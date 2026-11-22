@@ -44,8 +44,9 @@ class IndexService:
     def tokenize(self, text: str) -> List[str]:
         if not text:
             return []
-        raw_tokens = re.findall(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)?", text.lower())
-        return [t for t in raw_tokens if len(t) > 1 and t not in STOPWORDS]
+        # Unicode-aware word matching preserving Indic combining marks (Devanagari, Tamil, Telugu, etc. \u0900-\u0D7F)
+        raw_tokens = re.findall(r"[\w\u0900-\u0D7F]+(?:-[\w\u0900-\u0D7F]+)?", text.lower(), re.UNICODE)
+        return [t for t in raw_tokens if (len(t) > 1 or (len(t) == 1 and ord(t[0]) > 127)) and t not in STOPWORDS]
 
     def index_document(self, doc_id: str) -> int:
         """

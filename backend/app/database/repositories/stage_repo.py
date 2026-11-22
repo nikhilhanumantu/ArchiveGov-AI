@@ -37,3 +37,8 @@ class RestorationStageRepository:
         res = self.collection.delete_many({"doc_id": doc_id})
         sync_disk_if_mock()
         return res.deleted_count
+
+    def delete_by_doc_version(self, doc_id: str, version_id: str) -> int:
+        res = self.collection.delete_many({"doc_id": doc_id, "version_id": version_id})
+        sync_disk_if_mock()
+        return res.deleted_count

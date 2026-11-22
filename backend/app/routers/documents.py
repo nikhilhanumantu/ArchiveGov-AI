@@ -83,14 +83,17 @@ async def upload_document(
     # 4. Immediately execute PaddleOCR text recognition on this uploaded document
     extracted_text = ""
     text_regions = []
-    avg_conf = 96.5
+    avg_conf = 0.0
+    engine_used = "PaddleOCR PP-OCRv6 Primary Sovereign Engine"
     try:
         ocr_target = str(restored_path) if restored_path.exists() else str(file_path)
         ocr_res = paddleocr_adapter.extract_text(ocr_target, lang="en")
         extracted_text = ocr_res.get("extracted_text", "")
         text_regions = ocr_res.get("regions", [])
-        avg_conf = ocr_res.get("average_confidence", 96.5)
-        logger.info(f"Ingestion OCR succeeded for {doc_id}: {len(text_regions)} lines extracted.")
+        avg_conf = ocr_res.get("average_confidence", 0.0)
+        if ocr_res.get("is_fallback") or ocr_res.get("engine") != "PaddleOCR PP-OCRv6":
+            engine_used = ocr_res.get("engine", "Morphological Document Segmenter (Fallback)")
+        logger.info(f"Ingestion OCR completed for {doc_id}: {len(text_regions)} regions extracted via {engine_used}.")
     except Exception as e:
         logger.warning(f"Ingestion PaddleOCR note: {e}")
 
@@ -152,7 +155,7 @@ async def upload_document(
     doc_repo.update(doc_id, {"current_version_id": v1_1["version_id"]})
 
     # 7. Persist Initial OCR Transcription to ocr_results
-    if extracted_text:
+    if extracted_text or text_regions:
         ocr_repo.save_result({
             "document_id": doc_id,
             "version_id": v1_1["version_id"],
@@ -162,8 +165,8 @@ async def upload_document(
             "text_regions": text_regions,
             "regions": text_regions,
             "average_confidence": avg_conf,
-            "model_used": "PaddleOCR PP-OCRv6 Primary Sovereign Engine",
-            "engine": "PaddleOCR PP-OCRv6",
+            "model_used": engine_used,
+            "engine": engine_used,
             "word_count": len(extracted_text.split()) if extracted_text else 0,
             "line_count": len(text_regions)
         })
@@ -262,12 +265,19 @@ def delete_document(document_id: str, user: dict = Depends(require_permission(Pe
     if not success:
         raise HTTPException(status_code=404, detail="Failed to delete archival record from database.")
 
-    # Clean up physical files from disk
+    # Clean up physical files from disk (retryable and comprehensive)
     try:
+        if doc.get("pdf_file_key"):
+            storage.delete_file(doc["pdf_file_key"], category="originals")
         if doc.get("original_file_key"):
             storage.delete_file(doc["original_file_key"], category="originals")
         if doc.get("restored_file_key"):
             storage.delete_file(doc["restored_file_key"], category="restored")
+        
+        # Remove stage artifacts directory
+        stages_dir = Path(settings.UPLOAD_DIR) / "stages" / doc_id
+        if stages_dir.exists():
+            shutil.rmtree(str(stages_dir), ignore_errors=True)
     except Exception as e:
         logger.warning(f"File cleanup note for deleted doc {doc_id}: {e}")
 

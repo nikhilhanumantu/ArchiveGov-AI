@@ -73,11 +73,16 @@ class RestorationJobWorker:
             self.doc_repo.update(doc_id, {"status": "processing"})
             current_file_path = str(orig_path)
             
-            # Setup stage artifacts directory for Time Machine (Module 3)
-            version_id = "v2.0"
+            # Setup isolated stage artifacts directory for Time Machine (Module 3)
+            # Unique version ID per run so reruns never overwrite previous stage history
+            existing_versions = self.version_repo.find_by_document_id(doc_id)
+            ver_num = len(existing_versions) + 1
+            version_number = f"v{ver_num}.0"
+            version_id = f"VER-{uuid.uuid4().hex[:8].upper()}"
             stage_dir = Path(settings.UPLOAD_DIR) / "stages" / doc_id / version_id
             stage_dir.mkdir(parents=True, exist_ok=True)
-            self.stage_repo.delete_by_doc(doc_id)
+            # Clean up only if same version_id somehow already existed, preserving previous runs
+            self.stage_repo.delete_by_doc_version(doc_id, version_id)
 
             # Stage 0: Original immutable ingest
             stage_0_path = stage_dir / "00_original.png"
@@ -483,12 +488,12 @@ class RestorationJobWorker:
                 "metrics": metrics
             })
 
-            # Create Master Restored Version V2.0
+            # Create Master Restored Version Record
             parent_ver_id = v1_1["version_id"] if v1_1 else doc.get("current_version_id", "v1.0")
-            v2_0 = self.version_repo.create({
-                "version_id": f"VER-{uuid.uuid4().hex[:8].upper()}",
+            v_created = self.version_repo.create({
+                "version_id": version_id,
                 "document_id": doc_id,
-                "version_number": "v2.0",
+                "version_number": version_number,
                 "parent_version_id": parent_ver_id,
                 "version_type": "restored",
                 "file_key": restored_key,
@@ -498,15 +503,15 @@ class RestorationJobWorker:
                     "sharpness": metrics.get("non_reference_indicators", {}).get("sharpness_score", 420.0),
                     "psnr": metrics.get("reference_based_metrics", {}).get("psnr_db", 29.4)
                 },
-                "notes": "Full neural restoration pipeline complete. Ready for Archive Reviewer sign-off."
+                "notes": f"Full neural restoration pipeline complete ({version_number}). Ready for Archive Reviewer sign-off."
             })
 
-            # Update Document Record
+            # Switch document's current version ONLY after full restoration succeeds
             self.doc_repo.update(doc_id, {
                 "status": "pending_review",
-                "current_version_id": v2_0["version_id"],
+                "current_version_id": version_id,
                 "restored_file_key": restored_key,
-                "ocr_text": ocr_results["extracted_text"],
+                "ocr_text": ocr_results.get("extracted_text", ""),
                 "quality_metrics": metrics
             })
 
@@ -539,7 +544,7 @@ class RestorationJobWorker:
                 action="RESTORATION_COMPLETED",
                 resource_type="document",
                 resource_id=doc_id,
-                metadata={"job_id": job_id, "restored_version": v2_0["version_id"]}
+                metadata={"job_id": job_id, "restored_version": version_id}
             )
 
             logger.info(f"Restoration pipeline completed successfully for job {job_id}")

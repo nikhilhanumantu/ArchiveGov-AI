@@ -242,19 +242,20 @@ class PaddleOCRAdapter:
         for i, (bx, by, bw, bh) in enumerate(boxes):
             lines.append({
                 "line_number": i + 1,
-                "text": f"[Text Region {i+1}: {bw}x{bh}px]",
-                "confidence": 85.0,
+                "text": "",  # Empty transcript because text recognition failed / was not read
+                "confidence": 0.0,
                 "bbox": [bx, by, bw, bh],
                 "bbox_normalized": [round(bx/w, 3), round(by/h, 3), round(bw/w, 3), round(bh/h, 3)]
             })
 
         return {
-            "engine": "Morphological Document Segmenter",
+            "engine": "Morphological Document Segmenter (Fallback)",
+            "is_fallback": True,
             "language": lang,
-            "extracted_text": "\n".join(l["text"] for l in lines) if lines else "[No legible text detected]",
+            "extracted_text": "",  # Leave transcript empty when recognition fails
             "regions": lines,
-            "average_confidence": 85.0 if lines else 0.0,
-            "word_count": len(lines) * 3,
+            "average_confidence": 0.0,
+            "word_count": 0,
             "line_count": len(lines)
         }
 

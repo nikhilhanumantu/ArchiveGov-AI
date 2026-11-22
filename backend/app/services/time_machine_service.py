@@ -34,11 +34,16 @@ class TimeMachineService:
         if not doc:
             return {"stages": [], "error": "Document not found"}
 
-        stages = self.stage_repo.find_by_doc(doc_id, version_id=version_id)
+        target_version = version_id or doc.get("current_version_id")
+        stages = self.stage_repo.find_by_doc(doc_id, version_id=target_version)
+        if not stages and not version_id:
+            stages = self.stage_repo.find_by_doc(doc_id)
+
         if stages:
+            resolved_version = stages[0].get("version_id") or target_version or "v2.0"
             return {
                 "document_id": doc_id,
-                "version_id": version_id or doc.get("current_version_id", "v2.0"),
+                "version_id": resolved_version,
                 "title": doc.get("title", ""),
                 "total_stages": len(stages),
                 "stages": stages
