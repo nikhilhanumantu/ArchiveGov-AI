@@ -160,7 +160,7 @@
             id="ocrTextArea" 
             rows="14"
             class="w-full bg-surface-container-lowest border border-outline-variant/40 focus:border-primary text-slate-200 font-mono text-xs leading-relaxed p-4 rounded-xl resize-none shadow-inner"
-            placeholder="Running PaddleOCR text recognition..."
+            placeholder="Verified transcription will appear here..."
           ></textarea>
         </div>
 
@@ -300,14 +300,27 @@
 
   async function loadOcrData(force = false) {
     try {
+      if (force) {
+        Toast.info('Scanning document raster with neural OCR...');
+        textArea.placeholder = 'Running neural OCR transcription...';
+      }
       const url = force ? `/api/v1/ocr/${docId}?force_rescan=true` : `/api/v1/ocr/${docId}`;
       ocrData = await API.get(url);
       textArea.value = ocrData.corrected_text || ocrData.extracted_text || '';
+      if (!textArea.value) {
+        textArea.placeholder = 'No text detected from scan. You may enter or edit verified transcription manually.';
+      } else {
+        textArea.placeholder = 'Verified transcription will appear here...';
+      }
       confDisp.textContent = `${ocrData.average_confidence}% Confidence`;
       updateStats();
       renderBoundingBoxes(ocrData.text_regions || []);
+      if (force) {
+        Toast.success('Neural OCR scan completed.');
+      }
     } catch (e) {
       console.error(e);
+      textArea.placeholder = 'Error fetching OCR transcription.';
       Toast.error('Could not fetch OCR transcription.');
     }
   }
