@@ -87,7 +87,7 @@ async def upload_document(
     engine_used = "PaddleOCR PP-OCRv6 Primary Sovereign Engine"
     try:
         ocr_target = str(restored_path) if restored_path.exists() else str(file_path)
-        ocr_res = paddleocr_adapter.extract_text(ocr_target, lang="en")
+        ocr_res = paddleocr_adapter.extract_text(ocr_target, lang=language)
         extracted_text = ocr_res.get("extracted_text", "")
         text_regions = ocr_res.get("regions", [])
         avg_conf = ocr_res.get("average_confidence", 0.0)
@@ -260,26 +260,21 @@ def delete_document(document_id: str, user: dict = Depends(require_permission(Pe
     doc_id = doc.get("document_id", document_id)
     title = doc.get("title", doc_id)
 
-    # Permanently delete record from DB and all associated collection lineages
-    success = doc_repo.delete(doc_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Failed to delete archival record from database.")
+    # Keep the record and its version keys until all physical cleanup succeeds.
+    keys = {doc.get(name) for name in ("pdf_file_key", "original_file_key", "restored_file_key")}
+    keys.update(v.get("file_key") for v in version_repo.find_by_document_id(doc_id))
+    for key in filter(None, keys):
+        path = storage.resolve_path(key)
+        if path:
+            path.unlink(missing_ok=True)
+    if Path(doc_id).name != doc_id or doc_id in {".", ".."}:
+        raise HTTPException(status_code=400, detail="Invalid document identifier.")
+    stages_dir = storage.stages / doc_id
+    if stages_dir.is_dir():
+        shutil.rmtree(stages_dir)
 
-    # Clean up physical files from disk (retryable and comprehensive)
-    try:
-        if doc.get("pdf_file_key"):
-            storage.delete_file(doc["pdf_file_key"], category="originals")
-        if doc.get("original_file_key"):
-            storage.delete_file(doc["original_file_key"], category="originals")
-        if doc.get("restored_file_key"):
-            storage.delete_file(doc["restored_file_key"], category="restored")
-        
-        # Remove stage artifacts directory
-        stages_dir = Path(settings.UPLOAD_DIR) / "stages" / doc_id
-        if stages_dir.exists():
-            shutil.rmtree(str(stages_dir), ignore_errors=True)
-    except Exception as e:
-        logger.warning(f"File cleanup note for deleted doc {doc_id}: {e}")
+    if not doc_repo.delete(doc_id):
+        raise HTTPException(status_code=404, detail="Archival record no longer exists.")
 
     audit_repo.log(
         user_id=user["_id"],

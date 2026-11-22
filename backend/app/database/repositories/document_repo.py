@@ -128,25 +128,27 @@ class DocumentRepository:
                 return False
 
         actual_doc_id = doc.get("document_id") or str(doc.get("_id"))
-        res = self.collection.delete_one(query)
 
         # Remove associated cascading records from collections in DB
         db = get_db()
-        try:
-            db.document_versions.delete_many({"document_id": actual_doc_id})
-            db.ocr_results.delete_many({"document_id": actual_doc_id})
-            db.damage_analyses.delete_many({"document_id": actual_doc_id})
-            db.reviews.delete_many({"document_id": actual_doc_id})
-            db.restoration_jobs.delete_many({"document_id": actual_doc_id})
-            # Cascade delete intelligent archival collections (Copilot, Lens, Timeline, Time Machine)
-            db.rag_chunks.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
-            db.ocr_regions.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
-            db.timeline_events.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
-            db.restoration_stages.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
-            db.copilot_sessions.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}, {"related_document_id": actual_doc_id}]})
-        except Exception as e:
-            pass
-
+        db.document_versions.delete_many({"document_id": actual_doc_id})
+        db.ocr_results.delete_many({"document_id": actual_doc_id})
+        db.damage_analyses.delete_many({"document_id": actual_doc_id})
+        db.reviews.delete_many({"document_id": actual_doc_id})
+        db.restoration_jobs.delete_many({"document_id": actual_doc_id})
+        # Cascade delete intelligent archival collections (Copilot, Lens, Timeline, Time Machine)
+        db.rag_chunks.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
+        db.ocr_regions.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
+        db.timeline_events.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
+        db.restoration_stages.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}]})
+        db.copilot_sessions.delete_many({"$or": [{"doc_id": actual_doc_id}, {"document_id": actual_doc_id}, {"related_document_id": actual_doc_id}]})
+        for key in ("document_id", "doc_id"):
+            citation = {f"citations.{key}": actual_doc_id}
+            db.copilot_sessions.update_many(
+                {f"messages.citations.{key}": actual_doc_id},
+                {"$pull": {"messages": citation}},
+            )
+        res = self.collection.delete_one(query)
         sync_disk_if_mock()
         return res.deleted_count > 0
 

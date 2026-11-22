@@ -36,8 +36,8 @@ class TimeMachineService:
 
         target_version = version_id or doc.get("current_version_id")
         stages = self.stage_repo.find_by_doc(doc_id, version_id=target_version)
-        if not stages and not version_id:
-            stages = self.stage_repo.find_by_doc(doc_id)
+        if not stages and version_id and version_id != doc.get("current_version_id"):
+            return {"stages": [], "error": "No stages recorded for this version"}
 
         if stages:
             resolved_version = stages[0].get("version_id") or target_version or "v2.0"
@@ -54,7 +54,8 @@ class TimeMachineService:
         original_key = doc.get("original_file_key")
         orig_path = storage.resolve_path(original_key) if original_key else None
         
-        stages_dir = Path(settings.UPLOAD_DIR) / "stages" / doc_id / "v2.0"
+        target_version = target_version or "v2.0"
+        stages_dir = storage.stages / doc_id / target_version
         stages_dir.mkdir(parents=True, exist_ok=True)
 
         if orig_path and orig_path.exists():
@@ -63,12 +64,12 @@ class TimeMachineService:
                 shutil.copy2(orig_path, stage_0_path)
             stage_0 = self.stage_repo.create({
                 "doc_id": doc_id,
-                "version_id": "v2.0",
+                "version_id": target_version,
                 "stage_order": 0,
                 "stage_name": "original",
                 "label": "Original Archival Ingest",
                 "file_path": str(stage_0_path),
-                "file_url": f"/uploads/stages/{doc_id}/v2.0/00_original.png",
+                "file_url": f"/uploads/stages/{doc_id}/{target_version}/00_original.png",
                 "model_used": "Raw Archival Sensor Scan",
                 "fallback_used": False,
                 "reconstructed_mask_path": None,
@@ -84,12 +85,12 @@ class TimeMachineService:
                 shutil.copy2(rest_path, stage_final_path)
             stage_final = self.stage_repo.create({
                 "doc_id": doc_id,
-                "version_id": "v2.0",
+                "version_id": target_version,
                 "stage_order": 5,
                 "stage_name": "final",
                 "label": "Certified Restored Master",
                 "file_path": str(stage_final_path),
-                "file_url": f"/uploads/stages/{doc_id}/v2.0/05_final.png",
+                "file_url": f"/uploads/stages/{doc_id}/{target_version}/05_final.png",
                 "model_used": "Real-ESRGAN + LaMa + OpenCV",
                 "fallback_used": False,
                 "reconstructed_mask_path": None,
@@ -121,7 +122,7 @@ class TimeMachineService:
         """
         Compute or return the difference heatmap mask between two stages showing reconstructed pixels.
         """
-        stages = self.stage_repo.find_by_doc(doc_id)
+        stages = self.get_stages(doc_id).get("stages", [])
         stage_map = {s.get("stage_name"): s for s in stages}
 
         # Resolve paths

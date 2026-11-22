@@ -79,7 +79,7 @@ class RestorationJobWorker:
             ver_num = len(existing_versions) + 1
             version_number = f"v{ver_num}.0"
             version_id = f"VER-{uuid.uuid4().hex[:8].upper()}"
-            stage_dir = Path(settings.UPLOAD_DIR) / "stages" / doc_id / version_id
+            stage_dir = storage.stages / doc_id / version_id
             stage_dir.mkdir(parents=True, exist_ok=True)
             # Clean up only if same version_id somehow already existed, preserving previous runs
             self.stage_repo.delete_by_doc_version(doc_id, version_id)
@@ -152,7 +152,7 @@ class RestorationJobWorker:
             v1_1 = None
             if "opencv_preprocessing" in requested_ops:
                 self.job_repo.update_stage(job_id, "opencv_preprocessing", "running", int(completed_steps * step_progress))
-                preprocessed_key = f"preprocessed_{original_file_key}"
+                preprocessed_key = f"preprocessed_{version_id}_{original_file_key}"
                 preprocessed_path = str(storage.working / preprocessed_key)
                 preproc_results = opencv_processor.process_pipeline(
                     input_path=current_file_path,
@@ -194,7 +194,6 @@ class RestorationJobWorker:
                     "parameters": preproc_results["operations_applied"],
                     "notes": f"Deskewed by {preproc_results['deskew_angle']} deg; CLAHE contrast boosted"
                 })
-                self.doc_repo.update(doc_id, {"current_version_id": v1_1["version_id"]})
                 completed_steps += 1
                 self.job_repo.update_status(job_id, "running", int(5 + completed_steps * step_progress))
             else:
@@ -203,8 +202,8 @@ class RestorationJobWorker:
             # Stage 3: Finegrain / Real-ESRGAN Neural Enhancement
             if "realesrgan_enhancement" in requested_ops:
                 self.job_repo.update_stage(job_id, "realesrgan_enhancement", "running", int(completed_steps * step_progress))
-                enhanced_key = f"enhanced_{original_file_key}"
-                enhanced_path = str(storage.working / enhanced_key)
+                enhanced_key = f"enhanced_{version_id}_{original_file_key}"
+                enhanced_path = str(stage_dir / enhanced_key)
                 
                 model_config = job.get("model_configuration") or {}
                 enhance_params = job.get("processing_parameters") or {}
@@ -303,7 +302,7 @@ class RestorationJobWorker:
                 self.job_repo.update_stage(job_id, "realesrgan_enhancement", "skipped", 100, {"skipped": True})
 
             # Stage 4: LaMa Generative Inpainting
-            restored_key = f"restored_{original_file_key}"
+            restored_key = f"restored_{version_id}_{original_file_key}"
             restored_path = str(storage.restored / restored_key)
             if "lama_inpainting" in requested_ops:
                 self.job_repo.update_stage(job_id, "lama_inpainting", "running", int(completed_steps * step_progress))
@@ -373,10 +372,10 @@ class RestorationJobWorker:
             ocr_results = {"extracted_text": doc.get("ocr_text", ""), "regions": [], "average_confidence": 95.0, "language": "en"}
             if "paddleocr_extraction" in requested_ops:
                 self.job_repo.update_stage(job_id, "paddleocr_extraction", "running", int(completed_steps * step_progress))
-                ocr_results = paddleocr_adapter.extract_text(current_file_path, lang="en")
+                ocr_results = paddleocr_adapter.extract_text(current_file_path, lang=doc.get("language") or "en")
                 self.ocr_repo.save_result({
                     "document_id": doc_id,
-                    "version_id": "v2.0",
+                    "version_id": version_id,
                     "extracted_text": ocr_results["extracted_text"],
                     "corrected_text": ocr_results["extracted_text"],
                     "language": ocr_results["language"],
@@ -395,8 +394,6 @@ class RestorationJobWorker:
                 regions_to_save = []
                 for l_idx, line in enumerate(raw_lines):
                     l_txt = line.get("text", "").strip()
-                    if not l_txt:
-                        continue
                     c_raw = float(line.get("confidence", 95.0))
                     conf = round(c_raw / 100.0, 3) if c_raw > 1.0 else round(c_raw, 3)
                     bbox = line.get("bbox", [50, 50 + l_idx * 40, 600, 30])
@@ -414,9 +411,9 @@ class RestorationJobWorker:
                             break
 
                     regions_to_save.append({
-                        "region_id": f"reg_{doc_id[:6]}_l_{l_idx+1}",
+                        "region_id": f"reg_{version_id}_l_{l_idx+1}",
                         "doc_id": doc_id,
-                        "version_id": "v2.0",
+                        "version_id": version_id,
                         "page_number": 1,
                         "granularity": "line",
                         "bbox_pixels": bbox,
@@ -431,9 +428,9 @@ class RestorationJobWorker:
                         w_w = max(10, int(rw / len(words)))
                         for widx, w in enumerate(words):
                             regions_to_save.append({
-                                "region_id": f"reg_{doc_id[:6]}_w_{l_idx+1}_{widx+1}",
+                                "region_id": f"reg_{version_id}_w_{l_idx+1}_{widx+1}",
                                 "doc_id": doc_id,
-                                "version_id": "v2.0",
+                                "version_id": version_id,
                                 "page_number": 1,
                                 "granularity": "word",
                                 "bbox_pixels": [rx + widx * w_w, ry, w_w - 4, rh],
@@ -449,7 +446,6 @@ class RestorationJobWorker:
                             })
 
                 if regions_to_save:
-                    self.region_repo.delete_by_doc(doc_id)
                     self.region_repo.insert_many(regions_to_save)
 
                 completed_steps += 1
