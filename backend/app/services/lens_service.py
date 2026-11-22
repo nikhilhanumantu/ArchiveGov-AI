@@ -44,7 +44,7 @@ class LensService:
         if not doc:
             return {"document_id": doc_id, "regions": [], "error": "Document not found"}
 
-        regions = self.region_repo.find_by_doc(doc_id, page_number=page_number, granularity=granularity)
+        regions = self.region_repo.find_by_doc(doc_id, page_number=page_number, granularity=granularity, version_id=doc.get("current_version_id"))
         if regions:
             return {
                 "document_id": doc_id,
@@ -216,7 +216,7 @@ class LensService:
         damage_overlap = 0.0
 
         if region_id:
-            reg = self.region_repo.find_by_region_id(doc_id, region_id)
+            reg = self.region_repo.find_by_region_id(doc_id, region_id, version_id=doc.get("current_version_id"))
             if reg:
                 target_text = reg.get("text", "")
                 confidence = reg.get("confidence", 0.95)

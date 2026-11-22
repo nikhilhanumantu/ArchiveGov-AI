@@ -3,6 +3,8 @@ from typing import Optional
 from backend.app.core.dependencies import get_current_user
 from backend.app.database.repositories.version_repo import DocumentVersionRepository
 from backend.app.database.repositories.document_repo import DocumentRepository
+from backend.app.database.repositories.ocr_repo import OCRRepository
+from backend.app.ai.rag.index_service import index_service
 from backend.app.database.repositories.audit_repo import AuditRepository
 from backend.app.services.time_machine_service import time_machine_service
 
@@ -94,11 +96,14 @@ def rollback_version(document_id: str, version_id: str, user: dict = Depends(get
     if not target_ver or target_ver["document_id"] != document_id:
         raise HTTPException(status_code=404, detail="Target version not found.")
 
+    transcript = OCRRepository().find_by_document_id(document_id, version_id) or {}
     doc_repo.update(document_id, {
+        "ocr_text": transcript.get("corrected_text", transcript.get("extracted_text", "")),
         "current_version_id": version_id,
         "restored_file_key": target_ver["file_key"]
     })
 
+    index_service.index_document(document_id)
     audit_repo.log(
         user_id=user["_id"],
         action="VERSION_ROLLBACK",

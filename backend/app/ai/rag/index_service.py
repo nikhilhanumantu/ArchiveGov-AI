@@ -94,7 +94,7 @@ class IndexService:
             region_id = None
             page_number = 1
             if chunk_order == 0:
-                regions = self.region_repo.find_by_doc(doc_id, page_number=1)
+                regions = self.region_repo.find_by_doc(doc_id, page_number=1, version_id=doc.get("current_version_id"))
                 if regions:
                     region_id = regions[0].get("region_id")
                     page_number = regions[0].get("page_number", 1)

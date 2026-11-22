@@ -31,6 +31,7 @@ def get_ocr_data(document_id: str, use_restored: bool = True, force_rescan: bool
     doc = doc_repo.find_by_id(document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Archival document not found.")
+    document_id = doc["document_id"]
 
     # Check if already processed (unless force_rescan is requested)
     if not force_rescan:
@@ -71,6 +72,7 @@ def save_corrected_transcription(document_id: str, request: OCRSaveRequest, user
     doc = doc_repo.find_by_id(document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
+    document_id = doc["document_id"]
 
     updated = ocr_repo.update_corrected_text(document_id, request.corrected_text)
     doc_repo.update(document_id, {"ocr_text": request.corrected_text})
@@ -93,11 +95,12 @@ def export_ocr_file(document_id: str, format_type: str, user: dict = Depends(get
     doc = doc_repo.find_by_id(document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
+    document_id = doc["document_id"]
 
     ocr_record = ocr_repo.find_by_document_id(document_id)
     if not ocr_record:
         # Run OCR first if not found
-        get_ocr_data(document_id, True, user)
+        get_ocr_data(document_id, use_restored=True, user=user)
         ocr_record = ocr_repo.find_by_document_id(document_id)
 
     text_to_export = ocr_record.get("corrected_text") or ocr_record.get("extracted_text", "")
@@ -130,6 +133,7 @@ def extract_document_entities(document_id: str, user: dict = Depends(require_per
     doc = doc_repo.find_by_id(document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
+    document_id = doc["document_id"]
 
     raw_text = ""
     ocr_record = ocr_repo.find_by_document_id(document_id)
@@ -164,6 +168,7 @@ def translate_document_text(document_id: str, request: OCRTranslateRequest, user
     doc = doc_repo.find_by_id(document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
+    document_id = doc["document_id"]
 
     raw_text = getattr(request, "raw_text", None) or ""
     if not raw_text:

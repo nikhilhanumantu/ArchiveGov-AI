@@ -24,9 +24,12 @@ class OCRRegionRepository:
         self,
         doc_id: str,
         page_number: Optional[int] = None,
-        granularity: Optional[str] = None
+        granularity: Optional[str] = None,
+        version_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         query: Dict[str, Any] = {"doc_id": doc_id}
+        if version_id is not None:
+            query["version_id"] = version_id
         if page_number is not None:
             query["page_number"] = page_number
         if granularity:
@@ -38,8 +41,11 @@ class OCRRegionRepository:
             results.append(doc)
         return results
 
-    def find_by_region_id(self, doc_id: str, region_id: str) -> Optional[Dict[str, Any]]:
-        doc = self.collection.find_one({"doc_id": doc_id, "region_id": region_id})
+    def find_by_region_id(self, doc_id: str, region_id: str, version_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        query = {"doc_id": doc_id, "region_id": region_id}
+        if version_id is not None:
+            query["version_id"] = version_id
+        doc = self.collection.find_one(query)
         if doc and "_id" in doc:
             doc["_id"] = str(doc["_id"])
         return doc

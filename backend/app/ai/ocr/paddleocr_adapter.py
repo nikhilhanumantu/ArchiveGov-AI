@@ -1,4 +1,5 @@
-import os
+import re
+from functools import lru_cache
 # Ensure torch is imported before paddle on Windows to prevent DLL collision
 try:
     import torch
@@ -20,7 +21,8 @@ class PaddleOCRAdapter:
     Uses PaddleOCR (PP-OCRv6) and EasyOCR (PyTorch CRAFT + CRNN) for deep neural document text recognition,
     line-level bounding box extraction, and multi-lingual transcription with zero hallucination.
     """
-    def __init__(self):
+    def __init__(self, language: str = "en"):
+        self.language = language
         self._paddle_ocr = None
         self._easy_ocr = None
         self._engine_name = "PaddleOCR Multilingual Engine"
@@ -33,7 +35,7 @@ class PaddleOCRAdapter:
             import paddle
             from paddleocr import PaddleOCR
             # Disable mkldnn to ensure clean execution across all Windows CPU architectures
-            self._paddle_ocr = PaddleOCR(lang='en', enable_mkldnn=False)
+            self._paddle_ocr = PaddleOCR(lang=self.language, enable_mkldnn=False)
             self._is_ready = True
             self._engine_name = "PaddleOCR v3.7 (PP-OCRv6 Deep Neural Engine)"
             logger.info("PaddleOCR initialized successfully as primary OCR engine.")
@@ -44,7 +46,7 @@ class PaddleOCRAdapter:
         # 2. Initialize EasyOCR as Secondary Deep Neural Engine
         try:
             import easyocr
-            self._easy_ocr = easyocr.Reader(['en'], gpu=False, verbose=False)
+            self._easy_ocr = easyocr.Reader(self._easy_languages(), gpu=False, verbose=False)
             self._is_ready = True
             self._engine_name = f"EasyOCR v{easyocr.__version__} (PyTorch CRAFT Engine)"
             logger.info("EasyOCR initialized successfully as secondary OCR engine.")
@@ -54,6 +56,14 @@ class PaddleOCRAdapter:
 
         self._is_ready = False
         self._engine_name = "Morphological Text Stream Engine"
+
+    def _easy_languages(self):
+        return ["en"] if self.language == "en" else [self.language, "en"]
+
+    @staticmethod
+    @lru_cache(maxsize=8)
+    def _for_language(language):
+        return PaddleOCRAdapter(language)
 
     def get_status(self) -> Dict[str, Any]:
         return {
@@ -68,6 +78,19 @@ class PaddleOCRAdapter:
         Execute real Neural OCR on any uploaded document or historical picture.
         Detects text regions, recognizes words/lines, and computes bounding boxes and confidence.
         """
+        names = {"english": "en", "tamil": "ta", "hindi": "hi", "urdu": "ur",
+                 "marathi": "mr", "bengali": "bn", "telugu": "te"}
+        words = re.findall(r"[a-z]+", (lang or "en").lower())
+        codes = [names.get(word, word) for word in words]
+        language = next((code for code in codes if code in names.values() and code != "en"), None)
+        language = language or ("en" if "en" in codes else "unknown")
+        if language == "unknown":
+            img = opencv_processor.load_image(image_path)
+            h, w = img.shape[:2]
+            return self._run_morphological_ocr(img, w, h, lang)
+        if self.language != language:
+            return self._for_language(language).extract_text(image_path, language)
+        lang = language
         img = opencv_processor.load_image(image_path)
         (h, w) = img.shape[:2]
 
@@ -151,7 +174,7 @@ class PaddleOCRAdapter:
         if self._easy_ocr is None:
             try:
                 import easyocr
-                self._easy_ocr = easyocr.Reader(['en'], gpu=False, verbose=False)
+                self._easy_ocr = easyocr.Reader(self._easy_languages(), gpu=False, verbose=False)
             except Exception as e:
                 logger.warning(f"Could not load EasyOCR: {e}")
 

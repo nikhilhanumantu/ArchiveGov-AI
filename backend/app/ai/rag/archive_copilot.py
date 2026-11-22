@@ -1,10 +1,9 @@
 import re
 import math
 import logging
-from pathlib import Path
 from typing import List, Dict, Any, Optional, Set
 import requests
-from bson import json_util
+from backend.app.ai.rag.index_service import index_service
 
 from backend.app.core.config import settings
 from backend.app.database.repositories.document_repo import DocumentRepository
@@ -43,41 +42,17 @@ class ArchiveCopilotEngine:
 
     def _tokenize(self, text: str) -> List[str]:
         """Normalize and tokenize text into lowercase alphanumeric stems."""
-        if not text:
-            return []
-        raw_tokens = re.findall(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)?", text.lower())
-        return [t for t in raw_tokens if len(t) > 1 and t not in self.STOPWORDS]
+        return index_service.tokenize(text)
 
     def _build_corpus(self, department: Optional[str] = None, document_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Live corpus extraction joining MongoDB DocumentRepository with OCRRepository.
         Splits lengthy transcripts into overlapping ~120-word chunks.
         """
-        docs = []
-        try:
-            docs, _ = self.doc_repo.list_documents(
-                department=department if department and department != "all" else None,
-                limit=200
-            )
-        except Exception as ex:
-            logger.warning(f"Database query error during corpus build: {ex}. Using fallback.")
-            docs = []
-
-        fallback_path = Path(__file__).resolve().parent.parent.parent.parent / "data" / "mongodb_fallback.json"
-        fallback_data = {}
-        if fallback_path.exists():
-            try:
-                with open(fallback_path, "r", encoding="utf-8") as f:
-                    fallback_data = json_util.loads(f.read())
-            except Exception:
-                pass
-
-        if not docs and fallback_data:
-            docs = fallback_data.get("documents", [])
-            if department and department != "all":
-                docs = [d for d in docs if d.get("department_id") == department and not d.get("is_deleted")]
-            else:
-                docs = [d for d in docs if not d.get("is_deleted")]
+        docs, _ = self.doc_repo.list_documents(
+            department=department if department and department != "all" else None,
+            limit=200,
+        )
 
         if document_id and document_id != "all":
             docs = [d for d in docs if d.get("document_id") == document_id]
@@ -93,18 +68,7 @@ class ArchiveCopilotEngine:
             desc = doc.get("description", "")
 
             # Fetch associated OCR text
-            ocr_record = None
-            try:
-                ocr_record = self.ocr_repo.find_by_document_id(doc_id)
-            except Exception:
-                pass
-            if not ocr_record and fallback_data:
-                ocr_list = fallback_data.get("ocr_results", [])
-                for ocr_item in ocr_list:
-                    if ocr_item.get("document_id") == doc_id:
-                        ocr_record = ocr_item
-                        break
-
+            ocr_record = self.ocr_repo.find_by_document_id(doc_id)
             ocr_text = ""
             if ocr_record:
                 ocr_text = (
