@@ -4,7 +4,7 @@ import shutil
 import logging
 from pathlib import Path
 from typing import Optional, List
-from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status, BackgroundTasks
 from backend.app.core.dependencies import get_current_user, require_permission
 from backend.app.core.permissions import Permission
 from backend.app.storage.local_storage import storage
@@ -28,6 +28,7 @@ ocr_repo = OCRRepository()
 
 @router.post("/upload")
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: str = Form(...),
     department_id: str = Form("Land Revenue & Settlement"),
@@ -65,7 +66,7 @@ async def upload_document(
     doc_id = f"DOC-{uuid.uuid4().hex[:8].upper()}"
     ref_id = archive_reference_id if archive_reference_id and archive_reference_id.strip() else f"REC-{original_date}-{doc_id[-4:]}"
     
-    # 3. Immediately generate AI-restored / enhanced version of this uploaded file
+    # 3. Fast high-contrast contrast enhancement for instant preview (under 100ms)
     restored_file_key = f"restored_{file_key}"
     restored_path = storage.restored / restored_file_key
     try:
@@ -74,30 +75,13 @@ async def upload_document(
             output_path=str(restored_path),
             do_deskew=True,
             do_clahe=True,
-            do_denoise=True
+            do_denoise=False
         )
     except Exception as e:
         logger.warning(f"Initial OpenCV restoration pipeline note: {e}")
         shutil.copy2(str(file_path), str(restored_path))
 
-    # 4. Immediately execute PaddleOCR text recognition on this uploaded document
-    extracted_text = ""
-    text_regions = []
-    avg_conf = 0.0
-    engine_used = "PaddleOCR PP-OCRv6 Primary Sovereign Engine"
-    try:
-        ocr_target = str(restored_path) if restored_path.exists() else str(file_path)
-        ocr_res = paddleocr_adapter.extract_text(ocr_target, lang=language)
-        extracted_text = ocr_res.get("extracted_text", "")
-        text_regions = ocr_res.get("regions", [])
-        avg_conf = ocr_res.get("average_confidence", 0.0)
-        if ocr_res.get("is_fallback") or ocr_res.get("engine") != "PaddleOCR PP-OCRv6":
-            engine_used = ocr_res.get("engine", "Morphological Document Segmenter (Fallback)")
-        logger.info(f"Ingestion OCR completed for {doc_id}: {len(text_regions)} regions extracted via {engine_used}.")
-    except Exception as e:
-        logger.warning(f"Ingestion PaddleOCR note: {e}")
-
-    # 5. Create Document Record in MongoDB
+    # 4. Create Document Record in MongoDB immediately
     doc_data = {
         "document_id": doc_id,
         "title": title.strip(),
@@ -115,7 +99,7 @@ async def upload_document(
         "is_duplicate_notice": is_duplicate,
         "current_version_id": "v1.1",
         "status": "restored",
-        "ocr_text": extracted_text,
+        "ocr_text": "",
         "uploaded_by": user["_id"],
         "uploader_name": user.get("name", "Archive Officer"),
         "assigned_reviewer": None
@@ -124,7 +108,7 @@ async def upload_document(
         doc_data["pdf_file_key"] = pdf_file_key
     created_doc = doc_repo.create(doc_data)
     
-    # 6. Create Versions V1.0 (Original Upload) and V1.1 (AI Restored)
+    # 5. Create Versions V1.0 (Original Upload) and V1.1 (AI Restored)
     v1_0 = version_repo.create({
         "version_id": f"VER-{uuid.uuid4().hex[:8].upper()}",
         "document_id": doc_id,
@@ -147,31 +131,45 @@ async def upload_document(
         "version_type": "restored",
         "file_key": restored_file_key,
         "model_used": "OpenCV Sovereign Preprocessing & Contrast Enhancement",
-        "parameters": {"clahe": True, "denoise": True, "deskew": True},
+        "parameters": {"clahe": True, "denoise": False, "deskew": True},
         "created_by": user["_id"],
         "notes": "Automated initial contrast enhancement and text deskewing on ingestion."
     })
     
     doc_repo.update(doc_id, {"current_version_id": v1_1["version_id"]})
 
-    # 7. Persist Initial OCR Transcription to ocr_results
-    if extracted_text or text_regions:
-        ocr_repo.save_result({
-            "document_id": doc_id,
-            "version_id": v1_1["version_id"],
-            "extracted_text": extracted_text,
-            "corrected_text": extracted_text,
-            "language": language,
-            "text_regions": text_regions,
-            "regions": text_regions,
-            "average_confidence": avg_conf,
-            "model_used": engine_used,
-            "engine": engine_used,
-            "word_count": len(extracted_text.split()) if extracted_text else 0,
-            "line_count": len(text_regions)
-        })
+    # 6. Execute OCR in the background so upload returns in under 500ms
+    def _async_ingest_ocr(target_img_path: str, lang: str, target_doc_id: str, ver_id: str):
+        try:
+            ocr_res = paddleocr_adapter.extract_text(target_img_path, lang=lang)
+            extracted_text = ocr_res.get("extracted_text", "")
+            text_regions = ocr_res.get("regions", [])
+            avg_conf = ocr_res.get("average_confidence", 0.0)
+            engine_name = ocr_res.get("engine", "PaddleOCR Multilingual Engine")
 
-    # 8. Audit Log & Notification
+            ocr_repo.save_result({
+                "document_id": target_doc_id,
+                "version_id": ver_id,
+                "extracted_text": extracted_text,
+                "corrected_text": extracted_text,
+                "language": lang,
+                "text_regions": text_regions,
+                "regions": text_regions,
+                "average_confidence": avg_conf,
+                "model_used": engine_name,
+                "engine": engine_name,
+                "word_count": len(extracted_text.split()) if extracted_text else 0,
+                "line_count": len(text_regions)
+            })
+            doc_repo.update(target_doc_id, {"ocr_text": extracted_text})
+            logger.info(f"Background ingestion OCR completed for {target_doc_id}: {len(text_regions)} lines extracted.")
+        except Exception as ocr_err:
+            logger.warning(f"Background ingestion OCR error for {target_doc_id}: {ocr_err}")
+
+    ocr_target = str(restored_path) if restored_path.exists() else str(file_path)
+    background_tasks.add_task(_async_ingest_ocr, ocr_target, language, doc_id, v1_1["version_id"])
+
+    # 7. Audit Log & Notification
     audit_repo.log(
         user_id=user["_id"],
         action="DOCUMENT_UPLOAD",
